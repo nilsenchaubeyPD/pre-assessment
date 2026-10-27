@@ -31,7 +31,7 @@ export function CameraStage({
       {stream ? (
         <video ref={vid} autoPlay muted playsInline className="h-full w-full -scale-x-100 object-cover" aria-label="Your camera preview" />
       ) : (
-        <svg viewBox="0 0 476 256" preserveAspectRatio="xMidYMax slice" className="h-full w-full" role="img" aria-label="Simulated camera preview">
+        <svg viewBox="0 0 476 256" preserveAspectRatio="xMidYMax meet" className="h-full w-full" role="img" aria-label="Simulated camera preview">
           <circle cx="238" cy="102" r="35" fill={PERSON_DARK} />
           <path d="M148 256c0-58 36-90 90-90s90 32 90 90z" fill={PERSON_DARK} />
           {oval && <ellipse cx="238" cy="98" rx="58" ry="68" fill="none" stroke="#94A3B8" strokeWidth="1.6" strokeDasharray="5 4" />}
