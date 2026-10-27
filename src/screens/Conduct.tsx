@@ -2,11 +2,9 @@ import { useState } from "react";
 import { StepFrame } from "../components/StepFrame";
 import { Card, CardTitle } from "../components/Card";
 import { ActionBar } from "../components/ActionBar";
-import { InfoRow } from "../components/InfoRow";
-import { FixPanel } from "../components/FixPanel";
+import { Row, Lu, FBtn, FixBox } from "../components/fig";
 import { InlineCountdown } from "../components/Countdown";
-import { Modal } from "../components/Modal";
-import { Button, Icon, T } from "../components/primitives";
+import { T } from "../components/primitives";
 import { S } from "../strings";
 import { allRequiredOk, back, openHelp, startTest, useApp, useServerNow } from "../state/flowMachine";
 
@@ -14,57 +12,46 @@ export function Conduct() {
   const s = useApp((x) => x);
   const now = useServerNow();
   const [agreed, setAgreed] = useState(false);
-  const [full, setFull] = useState(false);
   const R = S.conduct.rows;
   const locked = now < s.scheduledStart;
   const starting = s.startState === "starting";
   const ready = allRequiredOk(s);
-  const disabled = !agreed || locked || !ready;
 
   return (
     <>
       <StepFrame title={S.conduct.title}>
-        <Card className="!p-0 overflow-hidden">
-          <div className="p-4 sm:p-6">
-            <CardTitle className="mb-2">{S.conduct.follow}</CardTitle>
-            <ul className="m-0 flex flex-col p-0">
-              <InfoRow icon="users" label={R.help.label} body={R.help.body} />
-              <InfoRow icon="phone" label={R.devices.label} body={R.devices.body} />
-              <InfoRow icon="windowApp" label={R.stay.label} body={R.stay.body} />
-              <InfoRow icon="alertOctagon" label={R.malpractice.label} body={R.malpractice.body} />
-            </ul>
-            <button type="button" onClick={() => setFull(true)} className="mt-2 inline-flex min-h-[44px] items-center text-sec font-medium text-brand hover:underline">
-              {S.conduct.fullText}
-            </button>
+        <Card className="flush">
+          <div style={{ padding: "24px 24px 12px", display: "flex", flexDirection: "column", gap: 16 }}>
+            <CardTitle>{S.conduct.follow}</CardTitle>
+            <Row icon="users" label={R.help.label}>{R.help.body}</Row>
+            <Row icon="phone" label={R.devices.label}>{R.devices.body}</Row>
+            <Row icon="tv-02" label={R.stay.label}>{R.stay.body}</Row>
+            <Row icon="warn" label={R.malpractice.label}>{R.malpractice.body}</Row>
           </div>
-          <div className="flex items-center gap-2 bg-subtle px-4 py-3 text-sec text-body sm:px-6">
-            <Icon name="info" size={16} />
-            {S.conduct.note}
-          </div>
+          <div className="f-note"><Lu n="info" size={14} />{S.conduct.note}</div>
         </Card>
 
-        <label className="flex min-h-[44px] cursor-pointer items-start gap-3 text-sec text-ink">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            className="mt-0.5 h-5 w-5 shrink-0 accent-[#2563EB]"
-          />
-          <span>{S.conduct.agree}</span>
+        <label className="f-chk">
+          <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
+          {S.conduct.agree}
         </label>
 
-        {s.startState === "failed" && (
-          <FixPanel
-            text={S.conduct.failed}
-            actions={
-              <>
-                <Button variant="secondary" onClick={startTest}>{S.common.tryAgain}</Button>
-                <Button variant="text" onClick={() => openHelp("conduct")}>{S.common.getHelp}</Button>
-              </>
-            }
-          />
+        {(s.startState === "failed" || !ready) && (
+          <div style={{ marginTop: 24 }}>
+            <FixBox
+              extra={
+                s.startState === "failed" ? (
+                  <div style={{ display: "flex", gap: 12, marginTop: 10 }}>
+                    <FBtn variant="sec" onClick={startTest}>{S.common.tryAgain}</FBtn>
+                    <FBtn variant="sec" onClick={() => openHelp("conduct")}>{S.common.getHelp}</FBtn>
+                  </div>
+                ) : undefined
+              }
+            >
+              {s.startState === "failed" ? S.conduct.failed : S.conduct.fixBlocked}
+            </FixBox>
+          </div>
         )}
-        {!ready && <FixPanel text={S.conduct.fixBlocked} />}
       </StepFrame>
       <ActionBar
         onBack={back}
@@ -72,15 +59,11 @@ export function Conduct() {
         primary={{
           label: starting ? S.conduct.starting : locked ? <T s={S.conduct.opensAt} /> : S.conduct.continue,
           onClick: startTest,
-          disabled,
+          disabled: !agreed || locked || !ready,
           loading: starting,
         }}
-        hint={locked ? <InlineCountdown target={s.scheduledStart} /> : !agreed ? S.conduct.tickHint : <T s={S.conduct.startHint} />}
-        hintLive={!locked}
+        hint={locked ? <InlineCountdown target={s.scheduledStart} /> : undefined}
       />
-      <Modal open={full} onClose={() => setFull(false)} title={S.conduct.fullTitle} footer={<Button onClick={() => setFull(false)}>{S.common.close}</Button>}>
-        <T s={S.conduct.fullBody} />
-      </Modal>
     </>
   );
 }

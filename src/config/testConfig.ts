@@ -37,9 +37,9 @@ export interface TestConfig {
 // Bracketed values are deliberate placeholders. They render with a dotted underline.
 export const testConfig: TestConfig = {
   type: "proctored",
-  assessmentName: "[Assessment name]",
+  assessmentName: "Full-Stack Developer Assessment",
   sections: 6,
-  durationMin: "[Duration]",
+  durationMin: "3 hr 10 min",
   scheduledStart: "[Date, time]",
   windowClose: "[Date, time]",
   allowEarlySetup: true,
@@ -78,4 +78,12 @@ export const testConfig: TestConfig = {
   },
   support: { channel: "[Support channel]" },
   idleMinutes: 10,
+};
+
+/** Details shown in the Figma frames. */
+export const candidate = {
+  name: "Nilsen Chaubey",
+  firstName: "Nilsen",
+  email: "nilsen.chaubey@nxtwave.co.in",
+  company: "NVIDIA",
 };

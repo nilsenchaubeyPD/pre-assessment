@@ -1,9 +1,7 @@
 import { StepFrame } from "../components/StepFrame";
 import { Card } from "../components/Card";
 import { ActionBar } from "../components/ActionBar";
-import { Badge, InfoRow } from "../components/InfoRow";
-import { Banner } from "../components/Banner";
-import { Button, IconName } from "../components/primitives";
+import { Badge, Fi, FBtn, Glyph, Row } from "../components/fig";
 import { S } from "../strings";
 import { allRequiredOk, back, checkOk, consentGiven, fixCheck, getCheckIds, goTo, isProctored, next, summaryTotals, useApp } from "../state/flowMachine";
 
@@ -13,52 +11,60 @@ export function Summary() {
   const R = S.summary.rows;
   const { passed, total } = summaryTotals(s);
   const all = allRequiredOk(s);
-  const okBadge = (t: string) => <Badge tone="ok" icon="check">{t}</Badge>;
-  const fix = (onClick: () => void) => <Button variant="secondary" onClick={onClick}>{S.summary.fixIt}</Button>;
   const slow = s.checks.internet.status === "warning";
-  const netOk = checkOk(s, "internet");
+  const fix = (onClick: () => void) => <FBtn variant="sec" onClick={onClick}>{S.summary.fixIt}</FBtn>;
+  const bad = (t: string) => <span className="f-msg bad">{t}</span>;
 
-  const rows: Array<{ key: string; icon: IconName; label: string; body: string; right: React.ReactNode }> = [];
-  if (ids.includes("internet"))
-    rows.push({
-      key: "internet", icon: "wifi", label: R.internet.label,
-      body: slow ? `${S.summary.speed.slowDown} down, ${S.summary.speed.slowUp} up` : `${S.summary.speed.down} down, ${S.summary.speed.up} up`,
-      right: netOk ? <Badge tone={slow ? "review" : "ok"} icon={slow ? "wifi" : "check"}>{slow ? R.internet.slow : R.internet.ok}</Badge> : fix(() => fixCheck("internet")),
-    });
-  if (isProctored(s))
-    rows.push({
-      key: "consent", icon: "shield", label: R.consent.label,
-      body: consentGiven(s) ? R.consent.ok : R.consent.no,
-      right: consentGiven(s) ? okBadge("") : fix(() => goTo("consent")),
-    });
-  if (ids.includes("extensions"))
-    rows.push({
-      key: "extensions", icon: "layers", label: R.extensions.label,
-      body: checkOk(s, "extensions") ? R.extensions.ok : R.extensions.no,
-      right: checkOk(s, "extensions") ? okBadge("") : fix(() => fixCheck("extensions")),
-    });
-  if (ids.includes("camera"))
-    rows.push({ key: "camera", icon: "camera", label: R.camera.label, body: checkOk(s, "camera") ? R.camera.ok : R.camera.no, right: checkOk(s, "camera") ? okBadge("") : fix(() => fixCheck("camera")) });
-  if (ids.includes("mic")) {
-    const skipped = s.checks.mic.status === "skipped";
-    rows.push({ key: "mic", icon: "mic", label: R.mic.label, body: checkOk(s, "mic") ? (skipped ? R.mic.skipped : R.mic.ok) : R.mic.no, right: checkOk(s, "mic") ? okBadge("") : fix(() => fixCheck("mic")) });
+  const rows: React.ReactNode[] = [];
+  if (ids.includes("internet")) {
+    const ok = checkOk(s, "internet");
+    const sp = slow ? [S.summary.speed.slowDown, S.summary.speed.slowUp] : [S.summary.speed.down, S.summary.speed.up];
+    rows.push(
+      <Row key="internet" icon="row-wifi" label={R.internet.label}
+        side={ok ? <span className="f-spd" style={{ display: "flex", gap: 16 }}><span><Fi n="download-01" />{sp[0]}</span><span><Fi n="upload-01" />{sp[1]}</span></span> : fix(() => fixCheck("internet"))}>
+        {ok ? (slow ? R.internet.slow : R.internet.ok) : bad(R.internet.offline)}
+      </Row>,
+    );
   }
+  if (isProctored(s))
+    rows.push(
+      <Row key="consent" icon="file-check-02" label={R.consent.label} side={consentGiven(s) ? undefined : fix(() => goTo("consent"))}>
+        {consentGiven(s) ? R.consent.ok : bad(R.consent.no)}
+      </Row>,
+    );
+  if (ids.includes("extensions"))
+    rows.push(
+      <Row key="ext" icon="shield-tick" label={R.extensions.label} side={checkOk(s, "extensions") ? undefined : fix(() => fixCheck("extensions"))}>
+        {checkOk(s, "extensions") ? R.extensions.ok : bad(R.extensions.no)}
+      </Row>,
+    );
+  if (ids.includes("camera"))
+    rows.push(
+      <Row key="cam" icon="camera-01" label={R.camera.label} side={checkOk(s, "camera") ? undefined : fix(() => fixCheck("camera"))}>
+        {checkOk(s, "camera") ? R.camera.ok : bad(R.camera.no)}
+      </Row>,
+    );
+  if (ids.includes("mic"))
+    rows.push(
+      <Row key="mic" icon="microphone-01" label={R.mic.label} side={checkOk(s, "mic") ? undefined : fix(() => fixCheck("mic"))}>
+        {checkOk(s, "mic") ? (s.checks.mic.status === "skipped" ? R.mic.skipped : R.mic.ok) : bad(R.mic.no)}
+      </Row>,
+    );
   if (ids.includes("screen"))
-    rows.push({ key: "screen", icon: "screen", label: R.screen.label, body: checkOk(s, "screen") ? R.screen.ok : R.screen.no, right: checkOk(s, "screen") ? okBadge("") : fix(() => fixCheck("screen")) });
+    rows.push(
+      <Row key="scr" icon="tv-02" label={R.screen.label} side={checkOk(s, "screen") ? undefined : fix(() => fixCheck("screen"))}>
+        {checkOk(s, "screen") ? R.screen.ok : bad(R.screen.no)}
+      </Row>,
+    );
 
   return (
     <>
       <StepFrame title={S.summary.title}>
-        <Banner tone={all ? "ok" : "warn"} icon={all ? "checkCircle" : "alert"} assertive={!all}>
-          {all ? S.summary.passed(passed, total) : S.summary.needsAttention(passed, total)}
-        </Banner>
-        <Card>
-          <ul className="m-0 flex flex-col p-0">
-            {rows.map((r) => (
-              <InfoRow key={r.key} icon={r.icon} label={r.label} body={r.body} right={r.right} />
-            ))}
-          </ul>
-        </Card>
+        <div className={`f-sum ${all ? "" : "bad"}`} role="status">
+          <span>{all ? S.summary.passed(passed, total) : S.summary.needsAttention(passed, total)}</span>
+          {all ? <Fi n="summary-check" /> : <Glyph g="warn" />}
+        </div>
+        <Card>{rows}</Card>
       </StepFrame>
       <ActionBar
         onBack={back}

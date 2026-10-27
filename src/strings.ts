@@ -6,7 +6,7 @@ export const S = {
   header: {
     report: "Report",
     skipToContent: "Skip to content",
-    logo: "[Company logo]",
+    logo: "Company logo",
     net: { checking: "Checking", good: "Excellent", slow: "Slow", offline: "Offline" },
   },
 
@@ -128,12 +128,12 @@ export const S = {
 
   // ---------------- 02 BEFORE YOU BEGIN ----------------
   before: {
-    title: "Hi [First name], before you begin",
+    title: "before you begin",
     need: "What you'll need",
     space: "Get your space ready",
     rows: {
       internet: { label: "Internet", body: "At least 5 Mbps." },
-      extensions: { label: "Browser extensions", body: "Blocked extensions must be turned off." },
+      extensions: { label: "Browser Extensions", body: "Blocked extensions must be turned off." },
       camera: { label: "Camera", body: "Stays on for the whole assessment." },
       mic: { label: "Microphone", body: "Audio is monitored." },
       screen: { label: "Screen Sharing", body: "Share your entire screen. Use one screen only." },
@@ -150,9 +150,9 @@ export const S = {
       none: "None Found",
       found: "Found",
     },
-    slowFix: "Your connection is slow. You can continue, but pages may load slowly. Move closer to your router or switch to a stronger network.",
+    slowFix: "Connection is slow. You can continue, but pages may load slowly.",
     offlineFix: "You're offline. Reconnect to continue.",
-    extFix: "We found extensions that can block the test. Turn them off in your browser, then press Check again.",
+    extFix: "Turn off the blocked extensions in your browser, then check again.",
     checkAgain: "Check again",
     hintBlocked: "Fix the item above to continue.",
   },
@@ -303,7 +303,7 @@ export const S = {
     rows: {
       internet: { label: "Internet", ok: "Excellent", slow: "Slow", offline: "Offline" },
       consent: { label: "Consent", ok: "Agreed to be recorded", no: "Not agreed yet" },
-      extensions: { label: "Browser extensions", ok: "No blocked extensions found", no: "Blocked extensions found" },
+      extensions: { label: "Browser Extensions", ok: "No blocked extensions found", no: "Blocked extensions found" },
       camera: { label: "Camera", ok: "Camera on, Identity confirmed", no: "Needs attention" },
       mic: { label: "Microphone", ok: "Microphone working", skipped: "Skipped", no: "Needs attention" },
       screen: { label: "Screen Sharing", ok: "Entire screen shared", no: "Needs attention" },

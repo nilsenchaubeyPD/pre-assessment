@@ -4,12 +4,7 @@ import { S } from "../strings";
 import { fixCheck, getCheckIds, useApp, useServerNow } from "../state/flowMachine";
 
 type Tone = "info" | "review" | "warn" | "ok";
-const tones: Record<Tone, string> = {
-  info: "bg-brand-tint border-[#BFDBFE] text-ink",
-  review: "bg-review-bg border-[#F3DC8B] text-review",
-  warn: "bg-warn-bg border-[#F6C9A6] text-warn",
-  ok: "bg-ok-banner border-okline text-ink",
-};
+const toneCls: Record<Tone, string> = { info: "warn", review: "warn", warn: "bad", ok: "warn" };
 
 export function Banner({
   tone,
@@ -25,13 +20,9 @@ export function Banner({
   action?: React.ReactNode;
 }) {
   return (
-    <div
-      role={assertive ? "alert" : "status"}
-      aria-live={assertive ? "assertive" : "polite"}
-      className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sec font-medium ${tones[tone]}`}
-    >
-      <Icon name={icon} size={20} className="mt-0.5" />
-      <div className="flex-1">{children}</div>
+    <div role={assertive ? "alert" : "status"} aria-live={assertive ? "assertive" : "polite"} className={`f-ban ${toneCls[tone]}`}>
+      <Icon name={icon} size={16} />
+      <div style={{ flex: 1 }}>{children}</div>
       {action}
     </div>
   );
@@ -65,7 +56,7 @@ export function BannerSlot() {
           action={
             <button
               type="button"
-              className="inline-flex min-h-[44px] shrink-0 items-center rounded px-2 text-sec font-semibold text-brand underline"
+              className="f-link"
               onClick={() => fixCheck(id)}
             >
               {S.banners.fixIt}
@@ -84,5 +75,5 @@ export function BannerSlot() {
     );
   }
   if (!items.length) return null;
-  return <div className="mx-auto mt-4 flex w-full max-w-content flex-col gap-2 px-4">{items}</div>;
+  return <div className="mx-auto mt-4 flex w-full max-w-[752px] flex-col gap-2 px-4" style={{ marginBottom: -12 }}>{items}</div>;
 }

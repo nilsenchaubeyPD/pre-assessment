@@ -1,23 +1,22 @@
 import { StepFrame } from "../components/StepFrame";
 import { Card, CardTitle } from "../components/Card";
 import { ActionBar } from "../components/ActionBar";
-import { Badge, BadgeTone, InfoRow } from "../components/InfoRow";
-import { FixPanel } from "../components/FixPanel";
-import { Button, IconName, Spinner } from "../components/primitives";
+import { Badge, FiName, Row, BadgeKind } from "../components/fig";
 import { S } from "../strings";
+import { candidate } from "../config/testConfig";
 import { back, getCheckIds, isProctored, next, runCheck, useApp, CheckState } from "../state/flowMachine";
 import type { CheckId } from "../devices/DeviceAdapter";
 
-function statusBadge(id: "internet" | "extensions", c: CheckState) {
+function StatusBadge({ id, c }: { id: "internet" | "extensions"; c: CheckState }) {
   const b = S.before.badge;
   if (c.status === "checking" || c.status === "idle")
-    return <Badge tone="busy"><Spinner size={12} />{b.checking}</Badge>;
-  let tone: BadgeTone = "ok";
+    return <span className="f-bdg idle"><span className="f-spin" />{b.checking}</span>;
+  let kind: BadgeKind = "ok";
   let text: string = id === "internet" ? b.excellent : b.none;
-  let icon: IconName = id === "internet" ? "wifi" : "check";
-  if (c.status === "warning") { tone = "review"; text = b.slow; }
-  if (c.status === "attention") { tone = "warn"; text = id === "internet" ? b.offline : b.found; icon = "alert"; }
-  return <Badge tone={tone} icon={icon}>{text}</Badge>;
+  let icon: FiName = id === "internet" ? "badge-wifi" : "badge-shield";
+  if (c.status === "warning") { kind = "warn"; text = b.slow; }
+  if (c.status === "attention") { kind = "bad"; text = id === "internet" ? b.offline : b.found; }
+  return <Badge kind={kind} icon={icon} pop>{text}</Badge>;
 }
 
 export function Before() {
@@ -28,48 +27,48 @@ export function Before() {
   const R = S.before.rows;
   const net = s.checks.internet;
   const ext = s.checks.extensions;
-  const blocked = net.status === "attention" || net.status === "checking" || (has("extensions") && (ext.status === "attention" || ext.status === "checking"));
+  const busy = net.status === "checking" || (has("extensions") && ext.status === "checking");
+  const blocked = busy || net.status === "attention" || (has("extensions") && ext.status === "attention");
+
+  // The row's own description carries the fix message, so the layout stays the same as the Figma frame.
+  const netDesc =
+    net.status === "warning" ? (
+      <>{R.internet.body} <span className="f-msg warn">{S.before.slowFix}</span></>
+    ) : net.status === "attention" ? (
+      <>{R.internet.body} <span className="f-msg bad">{S.before.offlineFix}</span> <button type="button" className="f-link" onClick={() => runCheck("internet")}>{S.before.checkAgain}</button></>
+    ) : R.internet.body;
+  const extDesc =
+    ext.status === "attention" ? (
+      <><span className="f-msg bad">{S.before.extFix}</span> <button type="button" className="f-link" onClick={() => runCheck("extensions")}>{S.before.checkAgain}</button></>
+    ) : R.extensions.body;
 
   return (
     <>
-      <StepFrame title={S.before.title}>
-        <Card>
-          <CardTitle className="mb-2">{S.before.need}</CardTitle>
-          <ul className="m-0 flex flex-col p-0">
-            <InfoRow icon="wifi" label={R.internet.label} body={R.internet.body} right={statusBadge("internet", net)} />
-            {has("extensions") && <InfoRow icon="layers" label={R.extensions.label} body={R.extensions.body} right={statusBadge("extensions", ext)} />}
-            {has("camera") && <InfoRow icon="camera" label={R.camera.label} body={R.camera.body} />}
-            {has("mic") && <InfoRow icon="mic" label={R.mic.label} body={R.mic.body} />}
-            {has("screen") && <InfoRow icon="screen" label={R.screen.label} body={R.screen.body} />}
-            {proctored && <InfoRow icon="globe" label={R.browser.label} body={R.browser.body} />}
-          </ul>
-          {net.status === "warning" && <div className="mt-3"><FixPanel tone="warning" text={S.before.slowFix} /></div>}
-          {net.status === "attention" && (
-            <div className="mt-3">
-              <FixPanel text={S.before.offlineFix} actions={<Button variant="secondary" onClick={() => runCheck("internet")}>{S.before.checkAgain}</Button>} />
-            </div>
-          )}
-          {has("extensions") && ext.status === "attention" && (
-            <div className="mt-3">
-              <FixPanel text={S.before.extFix} actions={<Button variant="secondary" onClick={() => runCheck("extensions")}>{S.before.checkAgain}</Button>} />
+      <StepFrame title={`Hi ${candidate.firstName}, ${S.before.title}`}>
+        <Card className="f-groups">
+          <div className="f-grp">
+            <CardTitle>{S.before.need}</CardTitle>
+            <Row icon="row-wifi" label={R.internet.label} side={<StatusBadge id="internet" c={net} />}>{netDesc}</Row>
+            {has("extensions") && <Row icon="shield-tick" label={R.extensions.label} side={<StatusBadge id="extensions" c={ext} />}>{extDesc}</Row>}
+            {has("camera") && <Row icon="camera-01" label={R.camera.label}>{R.camera.body}</Row>}
+            {has("mic") && <Row icon="microphone-01" label={R.mic.label}>{R.mic.body}</Row>}
+            {has("screen") && <Row icon="tv-02" label={R.screen.label}>{R.screen.body}</Row>}
+            {proctored && <Row icon="globe-02" label={R.browser.label}>{R.browser.body}</Row>}
+          </div>
+          {proctored && (
+            <div className="f-grp">
+              <CardTitle>{S.before.space}</CardTitle>
+              <Row icon="sun" label={R.room.label}>{R.room.body}</Row>
+              <Row icon="appwin" label={R.apps.label}>{R.apps.body}</Row>
+              <Row icon="plug" label={R.power.label}>{R.power.body}</Row>
             </div>
           )}
         </Card>
-        {proctored && (
-          <Card>
-            <CardTitle className="mb-2">{S.before.space}</CardTitle>
-            <ul className="m-0 flex flex-col p-0">
-              <InfoRow icon="sun" label={R.room.label} body={R.room.body} />
-              <InfoRow icon="windowApp" label={R.apps.label} body={R.apps.body} />
-              <InfoRow icon="plug" label={R.power.label} body={R.power.body} />
-            </ul>
-          </Card>
-        )}
       </StepFrame>
       <ActionBar
         onBack={back}
         primary={{ label: S.common.continue, onClick: next, disabled: blocked }}
-        hint={blocked && net.status !== "checking" && ext.status !== "checking" ? S.before.hintBlocked : undefined}
+        hint={blocked && !busy ? S.before.hintBlocked : undefined}
         hintLive
       />
     </>
