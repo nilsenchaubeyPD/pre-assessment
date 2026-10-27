@@ -1,22 +1,18 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { testConfig, TestType } from "../config/testConfig";
-import {
-  BreakKind,
-  CheckId,
-  CheckResult,
-  DeviceAdapter,
-  ErrorCode,
-  delay,
-} from "../devices/DeviceAdapter";
+import { BreakKind, CheckId, CheckResult, DeviceAdapter, ErrorCode, delay } from "../devices/DeviceAdapter";
 import { SimulatedAdapter, SimOutcomes } from "../devices/SimulatedAdapter";
 import { RealAdapter } from "../devices/RealAdapter";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
 /* ------------------------------------------------------------------ */
-export type StepId = "rules" | "consent" | "getReady" | "practice" | "start";
+export type StepId = "details" | "before" | "consent" | "setup" | "summary" | "conduct";
 export type Phase = "gate" | StepId | "started";
-export type CheckStatus = "idle" | "checking" | "ready" | "warning" | "attention" | "waiting" | "skipped";
+export type CheckStatus = "idle" | "checking" | "ready" | "warning" | "attention" | "skipped";
+export type SetupTab = "camera" | "mic" | "screen";
+export type CamStage = "allow" | "photo" | "countdown" | "review" | "quick" | "verifying";
+export type MicStage = "allow" | "phrase" | "recording" | "heard";
 
 export interface CheckState {
   id: CheckId;
@@ -37,8 +33,8 @@ export interface Controls {
   mic: string;
   face: string;
   screen: string;
-  fullscreen: string;
   network: "good" | "slow" | "offline";
+  extensions: "none" | "found";
   start: "success" | "fail";
   consent: "new" | "already";
   browser: "default" | "outdated";
@@ -46,7 +42,6 @@ export interface Controls {
   earlySetup: "allowed" | "locked";
   sebLaunch: "works" | "blocked";
   load: "normal" | "slow";
-  coding: boolean;
   failOnce: boolean;
 }
 
@@ -59,8 +54,8 @@ export const defaultControls: Controls = {
   mic: "ok",
   face: "ok",
   screen: "ok",
-  fullscreen: "ok",
   network: "good",
+  extensions: "none",
   start: "success",
   consent: "new",
   browser: "default",
@@ -68,9 +63,16 @@ export const defaultControls: Controls = {
   earlySetup: "allowed",
   sebLaunch: "works",
   load: "normal",
-  coding: false,
   failOnce: false,
 };
+
+export interface SetupState {
+  tab: SetupTab;
+  camStage: CamStage;
+  micStage: MicStage;
+  camDark: boolean;
+  micQuality?: ErrorCode;
+}
 
 export interface AppState {
   controls: Controls;
@@ -83,36 +85,31 @@ export interface AppState {
   completed: StepId[];
   consent: { agreed: boolean; at?: string; version?: string };
   checks: Record<CheckId, CheckState>;
-  runningAll: boolean;
+  setup: SetupState;
   faceEnrolled: boolean;
-  enrollStage: "idle" | "countdown" | "review";
-  practice: { choice?: number; codeRun?: boolean };
   scheduledStart: number;
   clockOffset: number;
   startState: "idle" | "starting" | "failed";
-  idleNote: boolean;
-  recheckedAt: number;
   helpOpen: boolean;
   helpContext: string;
   helpDiagnostics: boolean;
   toast: { id: number; msg: string } | null;
   resumeFlow: boolean;
-  openedToast: boolean;
 }
 
 /* ------------------------------------------------------------------ */
 /* Store                                                               */
 /* ------------------------------------------------------------------ */
 const SKEW_MS = 125_000; // device clock is deliberately wrong; we only trust "server" time
-const KEY = "topin.preassessment.v1";
+const KEY = "topin.preassessment.v2";
+const CHECK_IDS: CheckId[] = ["internet", "extensions", "camera", "mic", "screen"];
 
-const CHECK_IDS: CheckId[] = ["internet", "camera", "mic", "face", "screen", "fullscreen"];
-
-function freshChecks(faceWaiting = true): Record<CheckId, CheckState> {
+function freshChecks(): Record<CheckId, CheckState> {
   const o = {} as Record<CheckId, CheckState>;
-  CHECK_IDS.forEach((id) => (o[id] = { id, status: id === "face" && faceWaiting ? "waiting" : "idle", attempts: 0 }));
+  CHECK_IDS.forEach((id) => (o[id] = { id, status: "idle", attempts: 0 }));
   return o;
 }
+const freshSetup = (): SetupState => ({ tab: "camera", camStage: "allow", micStage: "allow", camDark: false });
 
 function computeStart(link: Controls["link"], offset: number): number {
   const now = Date.now() + offset;
@@ -134,21 +131,16 @@ function initialState(): AppState {
     completed: [],
     consent: { agreed: false },
     checks: freshChecks(),
-    runningAll: false,
+    setup: freshSetup(),
     faceEnrolled: false,
-    enrollStage: "idle",
-    practice: {},
     scheduledStart: computeStart(controls.link, SKEW_MS),
     clockOffset: SKEW_MS,
     startState: "idle",
-    idleNote: false,
-    recheckedAt: Date.now(),
     helpOpen: false,
     helpContext: "general",
     helpDiagnostics: false,
     toast: null,
     resumeFlow: false,
-    openedToast: false,
   };
 }
 
@@ -163,6 +155,9 @@ function set(patch: Partial<AppState> | ((s: AppState) => Partial<AppState>)) {
 }
 function setCheck(id: CheckId, patch: Partial<CheckState>) {
   set((s) => ({ checks: { ...s.checks, [id]: { ...s.checks[id], ...patch } } }));
+}
+function setSetup(patch: Partial<SetupState>) {
+  set((s) => ({ setup: { ...s.setup, ...patch } }));
 }
 export const getState = () => state;
 const subscribe = (l: () => void) => {
@@ -182,21 +177,19 @@ function persist() {
     completed: state.completed,
     consent: state.consent,
     checks: state.checks,
-    practice: state.practice,
     faceEnrolled: state.faceEnrolled,
     scheduledStart: state.scheduledStart,
     clockOffset: state.clockOffset,
-    gateAck: state.gateAck,
     sebRunning: state.sebRunning,
     resumeFlow: state.resumeFlow,
-  });
+  }); // never media
   try {
     sessionStorage.setItem(KEY, snapshot);
   } catch {
     memoryStore = snapshot;
   }
 }
-function readPersisted(): Partial<AppState> | null {
+function readPersisted(): Record<string, unknown> | null {
   let raw: string | null = null;
   try {
     raw = sessionStorage.getItem(KEY);
@@ -215,34 +208,36 @@ function readPersisted(): Partial<AppState> | null {
 /* Derived helpers                                                     */
 /* ------------------------------------------------------------------ */
 export const serverNow = (s: AppState = state) => Date.now() + s.clockOffset;
-
-export function micOptional(s: AppState = state) {
-  return s.controls.micMode === "optional";
-}
+export const micOptional = (s: AppState = state) => s.controls.micMode === "optional";
+export const isProctored = (s: AppState = state) => s.controls.testType !== "non_proctored";
+export const consentGiven = (s: AppState = state) => s.consent.agreed || s.controls.consent === "already";
 
 export function getSteps(s: AppState = state): StepId[] {
   const c = s.controls;
-  if (s.resumeFlow || c.link === "resume") return ["getReady"];
-  const out: StepId[] = ["rules"];
-  if (c.testType !== "non_proctored" && c.consent !== "already") out.push("consent");
-  if (c.testType !== "non_proctored") out.push("getReady");
-  if (testConfig.practiceEnabled) out.push("practice");
-  out.push("start");
+  if (s.resumeFlow || c.link === "resume") return ["setup"];
+  const out: StepId[] = ["details", "before"];
+  if (c.testType !== "non_proctored") {
+    if (c.consent !== "already") out.push("consent");
+    out.push("setup", "summary");
+  }
+  out.push("conduct");
   return out;
 }
 
 export function getCheckIds(s: AppState = state): CheckId[] {
   const c = s.controls;
   if (c.testType === "non_proctored") return ["internet"];
-  const req = testConfig.requires;
   let base: CheckId[] =
     c.testType === "seb"
       ? [...testConfig.sebChecks]
-      : (["internet", "camera", ...(req.mic ? ["mic"] : []), "face", "screen", "fullscreen"] as CheckId[]);
-  if (s.resumeFlow || c.link === "resume") {
-    base = base.filter((i) => ["internet", "camera", "screen", "fullscreen"].includes(i));
-  }
+      : (["internet", "extensions", "camera", ...(testConfig.requires.mic ? ["mic"] : []), "screen"] as CheckId[]);
+  if (s.resumeFlow || c.link === "resume") base = base.filter((i) => ["internet", "camera", "screen"].includes(i));
   return CHECK_IDS.filter((id) => base.includes(id));
+}
+
+export function setupTabs(s: AppState = state): SetupTab[] {
+  const ids = getCheckIds(s);
+  return (["camera", "mic", "screen"] as SetupTab[]).filter((t) => ids.includes(t));
 }
 
 export function requiredIds(s: AppState = state): CheckId[] {
@@ -255,14 +250,15 @@ export function checkOk(s: AppState, id: CheckId): boolean {
   if (id === "mic" && micOptional(s) && c.status === "skipped") return true;
   return c.status === "ready" || c.status === "warning";
 }
-
 export const allRequiredOk = (s: AppState = state) => requiredIds(s).every((id) => checkOk(s, id));
 
-export function firstProblem(s: AppState = state): CheckId | undefined {
-  return getCheckIds(s).find((id) => {
-    if (id === "mic" && micOptional(s) && s.checks[id].status === "skipped") return false;
-    return !checkOk(s, id) && s.checks[id].status === "attention";
-  });
+/** Rows for "Everything is set": device checks plus consent when this test records. */
+export function summaryTotals(s: AppState = state) {
+  const ids = requiredIds(s);
+  const withConsent = isProctored(s);
+  const total = ids.length + (withConsent ? 1 : 0);
+  const passed = ids.filter((id) => checkOk(s, id)).length + (withConsent && consentGiven(s) ? 1 : 0);
+  return { total, passed };
 }
 
 export type GateScreen =
@@ -284,7 +280,7 @@ export function gateScreen(s: AppState, now: number): GateScreen {
   if (c.testType === "seb" && !s.sebRunning) return "seb";
   if (s.gateAck) return "none";
   if (c.link === "early") {
-    if (now >= s.scheduledStart) return "open_now"; // the countdown ended while the page was open
+    if (now >= s.scheduledStart) return "open_now";
     return c.earlySetup === "allowed" ? "early" : "early_locked";
   }
   if (c.link === "late") return "late";
@@ -292,9 +288,7 @@ export function gateScreen(s: AppState, now: number): GateScreen {
   return "none";
 }
 
-export function helpContextFor(phase: Phase): string {
-  return phase === "started" ? "start" : phase;
-}
+export const helpContextFor = (phase: Phase): string => (phase === "started" ? "conduct" : phase);
 
 /* ------------------------------------------------------------------ */
 /* Analytics (no personal data)                                        */
@@ -306,8 +300,7 @@ declare global {
 }
 let stepEnteredAt = Date.now();
 export function track(name: string, props: Record<string, unknown> = {}) {
-  const ev = { name, props, t: Date.now() };
-  (window.__topinEvents ||= []).push(ev);
+  (window.__topinEvents ||= []).push({ name, props, t: Date.now() });
   // eslint-disable-next-line no-console
   console.debug("[analytics]", name, props);
 }
@@ -320,9 +313,11 @@ const useReal = typeof location !== "undefined" && new URLSearchParams(location.
 function consume(key: keyof SimOutcomes) {
   const c = state.controls;
   if (!c.failOnce) return;
-  const v = c[key];
+  const v = c[key as keyof Controls];
   if (key === "network" && v === "offline") return; // offline is only cleared by "reconnecting"
-  if (v !== "ok" && v !== "good") set({ controls: { ...c, [key]: key === "network" ? "good" : "ok" } });
+  if (v !== "ok" && v !== "good" && v !== "none") {
+    set({ controls: { ...c, [key]: key === "network" ? "good" : key === "extensions" ? "none" : "ok" } });
+  }
 }
 
 export const sim = new SimulatedAdapter(
@@ -331,14 +326,14 @@ export const sim = new SimulatedAdapter(
     mic: state.controls.mic,
     face: state.controls.face,
     screen: state.controls.screen,
-    fullscreen: state.controls.fullscreen,
+    fullscreen: "ok",
     network: state.controls.network,
+    extensions: state.controls.extensions,
   }),
   consume,
 );
 export const adapter: DeviceAdapter = useReal ? new RealAdapter() : sim;
 export const isReal = useReal;
-
 adapter.onTrackEnded((k) => handleBreak(k));
 
 /* ------------------------------------------------------------------ */
@@ -351,12 +346,11 @@ export function showToast(msg: string) {
   toastTimer = window.setTimeout(() => set({ toast: null }), 4000);
 }
 export function openHelp(context?: string, diagnostics = false) {
-  set({ helpOpen: true, helpContext: context ?? helpContextFor(state.phase), helpDiagnostics: diagnostics });
-  track("help_opened", { context: context ?? helpContextFor(state.phase) });
+  const ctx = context ?? helpContextFor(state.phase);
+  set({ helpOpen: true, helpContext: ctx, helpDiagnostics: diagnostics });
+  track("help_opened", { context: ctx });
 }
-export function closeHelp() {
-  set({ helpOpen: false });
-}
+export const closeHelp = () => set({ helpOpen: false });
 
 /* ------------------------------------------------------------------ */
 /* Navigation                                                          */
@@ -382,9 +376,7 @@ export function goTo(p: Phase, push = true) {
   const prev = state.phase;
   if (prev !== p) {
     const steps = getSteps();
-    if (prev !== "gate" && prev !== "started") {
-      track("step_viewed_duration", { step: prev, ms: Date.now() - stepEnteredAt });
-    }
+    if (prev !== "gate" && prev !== "started") track("step_duration", { step: prev, ms: Date.now() - stepEnteredAt });
     stepEnteredAt = Date.now();
     track("step_viewed", { step: p, index: steps.indexOf(p as StepId) + 1 });
   }
@@ -397,12 +389,22 @@ export function goTo(p: Phase, push = true) {
   onEnter(p);
 }
 
+function firstOpenTab(): SetupTab {
+  const tabs = setupTabs();
+  const ids = tabs.filter((t) => !checkOk(state, t));
+  return ids[0] ?? tabs[tabs.length - 1] ?? "camera";
+}
+
 function onEnter(p: Phase) {
-  if (p === "getReady" || (p === "rules" && state.controls.testType === "non_proctored")) {
-    if (state.checks.internet.status === "idle" || state.checks.internet.stale) void runCheck("internet");
-  }
-  if (p === "start" || p === "practice" || p === "rules") {
-    set({ idleNote: false });
+  if (p === "gate" || p === "started") return;
+  const ids = getCheckIds();
+  // Internet runs on arrival (the header indicator depends on it); extensions on "Before you begin".
+  const needs = (id: CheckId) => ids.includes(id) && (state.checks[id].status === "idle" || state.checks[id].stale);
+  if (needs("internet")) void runCheck("internet");
+  if (p === "before" && needs("extensions")) void runCheck("extensions");
+  if (p === "setup") {
+    const tab = firstOpenTab();
+    setSetup({ tab, camStage: "allow", micStage: "allow", camDark: false, micQuality: undefined });
   }
 }
 
@@ -414,7 +416,7 @@ export function next() {
   track("step_completed", { step: cur, ms: Date.now() - stepEnteredAt });
   set((s) => ({ completed: s.completed.includes(cur) ? s.completed : [...s.completed, cur] }));
   if (i + 1 < steps.length) goTo(steps[i + 1]);
-  else finishResume();
+  else set({ phase: "started" }); // quick check after resume: straight back into the running test
 }
 
 export function back() {
@@ -423,27 +425,24 @@ export function back() {
   if (i > 0) goTo(steps[i - 1]);
 }
 
-function finishResume() {
-  set({ phase: "started" });
-}
-
 export function startGateFlow() {
-  // after gate acknowledgements: enter the first step
-  const steps = getSteps();
-  goTo(steps[0]);
+  goTo(getSteps()[0]);
 }
-
 export function continueGate() {
   set({ gateAck: true });
   afterGateChange();
 }
-
 export function afterGateChange() {
-  const now = serverNow();
-  if (state.phase === "gate" && gateScreen(state, now) === "none") {
+  if (state.phase === "gate" && gateScreen(state, serverNow()) === "none") {
     if (state.controls.link === "resume") set({ resumeFlow: true });
     startGateFlow();
   }
+}
+
+/* ---------- details ---------- */
+export function logout() {
+  setControl("link", "expired");
+  showToast("Logged out");
 }
 
 /* ---------- seb ---------- */
@@ -465,13 +464,9 @@ export function sebAlreadyInstalled() {
   void openSeb();
 }
 
-/* ------------------------------------------------------------------ */
-/* Consent                                                             */
-/* ------------------------------------------------------------------ */
+/* ---------- consent ---------- */
 export function agreeConsent() {
-  set({
-    consent: { agreed: true, at: new Date(serverNow()).toISOString(), version: testConfig.consent.version },
-  });
+  set({ consent: { agreed: true, at: new Date(serverNow()).toISOString(), version: testConfig.consent.version } });
   track("consent_recorded", { version: testConfig.consent.version });
   next();
 }
@@ -479,35 +474,26 @@ export function agreeConsent() {
 /* ------------------------------------------------------------------ */
 /* Checks                                                              */
 /* ------------------------------------------------------------------ */
-const inflight = new Set<CheckId>();
+const inflight = new Set<string>();
 
 async function execute(id: CheckId): Promise<CheckResult> {
   switch (id) {
     case "internet":
       return adapter.checkInternet();
+    case "extensions":
+      return adapter.checkExtensions();
     case "camera":
       return adapter.getCamera();
     case "mic":
       return adapter.getMicLevel();
-    case "face":
-      return adapter.detectFace();
-    case "screen": {
-      const r = await adapter.shareScreen();
-      return r;
-    }
-    case "fullscreen":
-      return adapter.enterFullscreen();
+    case "screen":
+      return adapter.shareScreen();
   }
 }
 
-export function faceBlocked(s: AppState = state) {
-  const c = s.checks.camera;
-  return !(c.status === "ready" || c.status === "warning") || !!c.broken;
-}
-
+/** Generic check run (internet, extensions, screen). Camera and microphone have their own flows below. */
 export async function runCheck(id: CheckId): Promise<CheckStatus> {
   if (inflight.has(id)) return state.checks[id].status;
-  if (id === "face" && faceBlocked()) return "waiting";
   inflight.add(id);
   const before = state.checks[id].status;
   setCheck(id, { status: "checking", stale: false });
@@ -519,91 +505,170 @@ export async function runCheck(id: CheckId): Promise<CheckStatus> {
     res = { status: "attention", code: "START_FAILED" };
   }
   inflight.delete(id);
-
-  // first-time face enrollment: a good detection moves to photo review, not "ready"
-  if (id === "face" && !state.faceEnrolled && res.status === "ready") {
-    setCheck("face", { status: "idle", errorCode: undefined, attempts: 0 });
-    set({ enrollStage: "review" });
-    return "idle";
-  }
-
   const failed = res.status === "attention";
-  const prev = state.checks[id];
   setCheck(id, {
     status: res.status,
     errorCode: res.code,
-    attempts: failed ? prev.attempts + 1 : 0,
+    attempts: failed ? state.checks[id].attempts + 1 : 0,
     lastCheckedAt: Date.now(),
     broken: false,
   });
   if (failed) track("check_failed", { check: id, code: res.code });
   else if (before === "attention") track("check_fixed", { check: id });
-
-  if (id === "face" && failed && !state.faceEnrolled) set({ enrollStage: "idle" });
-
-  if (id === "camera") {
-    if (failed) {
-      setCheck("face", { status: "waiting", errorCode: undefined, attempts: 0 });
-      set({ enrollStage: "idle" });
-    } else if (state.checks.face.status === "waiting") {
-      setCheck("face", { status: "idle" });
-      if (state.faceEnrolled && state.controls.testType !== "non_proctored" && getCheckIds().includes("face")) {
-        void runCheck("face"); // returning candidate: quick automatic check
-      }
-    }
-  }
   return res.status;
 }
 
+/* ---------- camera ---------- */
+export async function allowCamera() {
+  if (inflight.has("camera")) return;
+  inflight.add("camera");
+  const prev = state.checks.camera.status;
+  setCheck("camera", { status: "checking", stale: false });
+  track("check_started", { check: "camera" });
+  const res = await adapter.getCamera();
+  inflight.delete("camera");
+  if (res.status === "attention") {
+    setCheck("camera", { status: "attention", errorCode: res.code, attempts: state.checks.camera.attempts + 1, broken: false });
+    track("check_failed", { check: "camera", code: res.code });
+    return;
+  }
+  if (prev === "attention") track("check_fixed", { check: "camera" });
+  // permission granted. The check is only complete once the face is verified.
+  setCheck("camera", { status: "idle", errorCode: undefined, broken: false });
+  setSetup({ camDark: res.code === "CAM_DARK", camStage: state.faceEnrolled ? "quick" : "photo" });
+}
+export const takePhoto = () => setSetup({ camStage: "countdown" });
+export const photoCaptured = () => setSetup({ camStage: "review" });
+export const retakePhoto = () => setSetup({ camStage: "photo" });
+
+export async function verifyFace() {
+  if (inflight.has("face")) return;
+  inflight.add("face");
+  const wasEnrolled = state.faceEnrolled;
+  setSetup({ camStage: "verifying" });
+  track("check_started", { check: "face" });
+  const res = await adapter.detectFace();
+  inflight.delete("face");
+  if (res.status === "attention") {
+    setCheck("camera", { status: "attention", errorCode: res.code, attempts: state.checks.camera.attempts + 1 });
+    setSetup({ camStage: wasEnrolled ? "quick" : "photo" });
+    track("check_failed", { check: "face", code: res.code });
+    return;
+  }
+  set({ faceEnrolled: true });
+  setCheck("camera", { status: state.setup.camDark ? "warning" : "ready", errorCode: undefined, attempts: 0, lastCheckedAt: Date.now(), broken: false });
+  track("check_fixed", { check: "face" });
+  setSetup({ camStage: wasEnrolled ? "quick" : "review" });
+  await delay(350);
+  advanceTab("camera");
+}
+
+/* ---------- microphone ---------- */
+export async function allowMic() {
+  if (inflight.has("mic")) return;
+  inflight.add("mic");
+  setCheck("mic", { status: "checking", stale: false });
+  track("check_started", { check: "mic" });
+  const res = await adapter.getMicLevel();
+  inflight.delete("mic");
+  const quality = res.code === "MIC_SILENT" || res.code === "MIC_NOISY" ? res.code : undefined;
+  if (res.status === "attention" && !quality) {
+    setCheck("mic", { status: "attention", errorCode: res.code, attempts: state.checks.mic.attempts + 1 });
+    track("check_failed", { check: "mic", code: res.code });
+    return;
+  }
+  setCheck("mic", { status: "idle", errorCode: undefined, broken: false });
+  setSetup({ micStage: "phrase", micQuality: quality });
+}
+export const startRecording = () => setSetup({ micStage: "recording" });
+export async function stopRecording() {
+  if (state.setup.micStage !== "recording") return;
+  setCheck("mic", { status: "checking" });
+  await delay(700);
+  const q = state.setup.micQuality;
+  if (q === "MIC_SILENT") {
+    setCheck("mic", { status: "attention", errorCode: "MIC_SILENT", attempts: state.checks.mic.attempts + 1 });
+    setSetup({ micStage: "phrase", micQuality: undefined });
+    track("check_failed", { check: "mic", code: "MIC_SILENT" });
+    return;
+  }
+  setCheck("mic", {
+    status: q === "MIC_NOISY" ? "warning" : "ready",
+    errorCode: q,
+    attempts: 0,
+    lastCheckedAt: Date.now(),
+    broken: false,
+  });
+  setSetup({ micStage: "heard", micQuality: undefined });
+}
 export function skipMic() {
   setCheck("mic", { status: "skipped", errorCode: undefined });
+  advanceTab("mic");
 }
 
-export function confirmFacePhoto() {
-  set({ faceEnrolled: true, enrollStage: "idle" });
-  setCheck("face", { status: "ready", errorCode: undefined, attempts: 0, lastCheckedAt: Date.now(), broken: false });
-  track("face_enrolled");
-}
-export function retakeFace() {
-  set({ enrollStage: "idle" });
-}
-export function setEnrollStage(stage: AppState["enrollStage"]) {
-  set({ enrollStage: stage });
-}
-
-export async function runAll() {
-  if (state.runningAll) return;
-  set({ runningAll: true });
-  for (const id of getCheckIds()) {
-    const c = state.checks[id];
-    if (id === "mic" && micOptional() && c.status === "skipped") continue;
-    if (checkOk(state, id)) continue;
-    if (id === "face" && !state.faceEnrolled) {
-      focusFix("face");
-      break;
-    }
-    const st = await runCheck(id);
-    if (st === "attention") {
-      focusFix(id);
-      break;
-    }
+/* ---------- screen ---------- */
+export async function shareScreen() {
+  const st = await runCheck("screen");
+  if (st === "ready") {
+    await delay(500);
+    advanceTab("screen");
   }
-  set({ runningAll: false });
 }
 
-export function focusFix(id: CheckId) {
-  window.setTimeout(() => {
-    const row = document.getElementById(`check-${id}`);
-    if (!row) return;
-    row.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
-    const target =
-      row.querySelector<HTMLElement>("[data-fix-focus]") ?? row.querySelector<HTMLElement>("button:not([disabled])");
-    target?.focus({ preventScroll: true });
-  }, 60);
+/* ---------- setup navigation ---------- */
+export function advanceTab(from: SetupTab) {
+  if (state.phase !== "setup") return;
+  const tabs = setupTabs();
+  const i = tabs.indexOf(from);
+  if (i >= 0 && i + 1 < tabs.length) {
+    setSetup({ tab: tabs[i + 1], micStage: "allow", camStage: "allow" });
+  } else {
+    next();
+  }
 }
-export function focusFirstProblem() {
-  const id = firstProblem() ?? getCheckIds().find((i) => !checkOk(state, i));
-  if (id) focusFix(id);
+export function setupBack() {
+  const { tab, camStage, micStage } = state.setup;
+  const tabs = setupTabs();
+  const i = tabs.indexOf(tab);
+  const toPrevTab = () => {
+    if (i > 0) {
+      const prev = tabs[i - 1];
+      setSetup({ tab: prev, camStage: state.faceEnrolled ? "quick" : "photo", micStage: "phrase" });
+    } else back();
+  };
+  if (tab === "camera") {
+    if (camStage === "verifying" || camStage === "countdown") return;
+    if (camStage === "review") return setSetup({ camStage: "photo" });
+    if (camStage === "photo" || camStage === "quick") return setSetup({ camStage: "allow" });
+    return toPrevTab();
+  }
+  if (tab === "mic") {
+    if (micStage === "recording") return setSetup({ micStage: "phrase" });
+    if (micStage === "heard") return setSetup({ micStage: "phrase" });
+    if (micStage === "phrase") return setSetup({ micStage: "allow" });
+    return toPrevTab();
+  }
+  return toPrevTab();
+}
+export function selectTab(t: SetupTab) {
+  if (state.setup.tab === t) return;
+  setSetup({ tab: t, camStage: state.faceEnrolled ? "quick" : "photo", micStage: "allow" });
+}
+
+/** Jump to the setup screen on the tab that needs fixing (used by "Fix it"). */
+export function fixCheck(id: CheckId) {
+  if (id === "internet" || id === "extensions") {
+    if (getSteps().includes("before")) goTo("before");
+    else void runCheck(id);
+    return;
+  }
+  if (getSteps().includes("setup")) {
+    goTo("setup");
+    setSetup({ tab: id as SetupTab, camStage: "allow", micStage: "allow" });
+  }
+}
+export function firstProblem(s: AppState = state): CheckId | undefined {
+  return getCheckIds(s).find((id) => !checkOk(s, id) && (s.checks[id].status === "attention" || s.checks[id].broken || s.checks[id].stale));
 }
 
 /* ---------- regression ("Break it now" and real track-ended events) ---------- */
@@ -619,57 +684,31 @@ export function handleBreak(kind: BreakKind) {
   const map = {
     screen: ["screen", "SCREEN_STOPPED"],
     camera: ["camera", "CAM_LOST"],
-    fullscreen: ["fullscreen", "FULLSCREEN_EXITED"],
+    fullscreen: [undefined, undefined],
   } as const;
   const [id, code] = map[kind];
-  if (!getCheckIds().includes(id)) return;
+  if (!id || !getCheckIds().includes(id)) return;
   const c = state.checks[id];
   if (c.status !== "ready" && c.status !== "warning") return;
   setCheck(id, { status: "attention", errorCode: code, broken: true, attempts: 0 });
-  if (id === "camera") {
-    setCheck("face", { status: "waiting", errorCode: undefined, broken: false });
-  }
   track("check_failed", { check: id, code });
 }
-
 export function breakNow(kind: BreakKind) {
   if (adapter instanceof SimulatedAdapter) adapter.trigger(kind);
   else handleBreak(kind);
 }
-
 export function setOnline() {
   set({ controls: { ...state.controls, network: "good" } });
   void runCheck("internet");
 }
 
-/* ---------- idle recheck on Start ---------- */
-export async function idleRecheck() {
-  set({ idleNote: true });
-  for (const id of ["internet", "camera", "screen"] as CheckId[]) {
-    if (getCheckIds().includes(id)) await runCheck(id);
-  }
-  set({ recheckedAt: Date.now() });
-}
-export function touchRecheck() {
-  set({ recheckedAt: Date.now() });
-}
-
 /* ------------------------------------------------------------------ */
-/* Practice                                                            */
-/* ------------------------------------------------------------------ */
-export function choosePractice(i: number) {
-  set((s) => ({ practice: { ...s.practice, choice: i } })); // not persisted beyond session
-}
-export function runPracticeCode() {
-  set((s) => ({ practice: { ...s.practice, codeRun: true } }));
-}
-
-/* ------------------------------------------------------------------ */
-/* Start                                                               */
+/* Start (the last Continue on the Code of Conduct)                    */
 /* ------------------------------------------------------------------ */
 export async function startTest() {
   if (state.startState === "starting") return;
   if (serverNow() < state.scheduledStart || !allRequiredOk()) return;
+  if (isProctored() && !consentGiven()) return;
   set({ startState: "starting" });
   track("start_pressed");
   await delay(1400);
@@ -694,7 +733,6 @@ export async function startTest() {
 const RESTART_KEYS: Array<keyof Controls> = [
   "testType", "link", "device", "browser", "load", "earlySetup", "candidate", "consent", "micMode",
 ];
-
 let loadTimers: number[] = [];
 
 export function restartFlow() {
@@ -713,16 +751,12 @@ export function restartFlow() {
     completed: [],
     consent: { agreed: false },
     checks: freshChecks(),
-    runningAll: false,
+    setup: freshSetup(),
     faceEnrolled: c.candidate === "returning",
-    enrollStage: "idle",
-    practice: {},
     clockOffset: SKEW_MS,
     scheduledStart: computeStart(c.link, SKEW_MS),
     startState: "idle",
-    idleNote: false,
     resumeFlow: c.link === "resume",
-    openedToast: false,
   });
   try {
     history.replaceState({ phase: "gate" }, "", "#/gate");
@@ -757,19 +791,18 @@ export function setControl<K extends keyof Controls>(key: K, value: Controls[K])
 }
 
 export function applyPreset(name: "happy" | "firstTimer" | "failOnce" | "early" | "phone" | "seb") {
-  const base = { ...defaultControls };
   const presets: Record<typeof name, Partial<Controls>> = {
     happy: {},
     firstTimer: { camera: "blocked", screen: "tab", failOnce: true },
     failOnce: {
       camera: "inuse", mic: "silent", face: "none", screen: "window",
-      fullscreen: "blocked", network: "slow", start: "fail", failOnce: true,
+      extensions: "found", network: "slow", start: "fail", failOnce: true,
     },
     early: { link: "early" },
     phone: { device: "iphone" },
     seb: { testType: "seb" },
   };
-  set({ controls: { ...base, ...presets[name] } });
+  set({ controls: { ...defaultControls, ...presets[name] } });
   restartFlow();
 }
 
@@ -784,13 +817,9 @@ export function resetAll() {
 }
 
 export function advanceClock() {
-  const target = state.scheduledStart;
-  set({ clockOffset: state.clockOffset + Math.max(0, target - serverNow() + 500) });
+  set({ clockOffset: state.clockOffset + Math.max(0, state.scheduledStart - serverNow() + 500) });
 }
-
-export function restartPrototype() {
-  restartFlow();
-}
+export const restartPrototype = restartFlow;
 
 /* ------------------------------------------------------------------ */
 /* Boot                                                                */
@@ -803,13 +832,10 @@ export function boot() {
     CHECK_IDS.forEach((id) => {
       const c = savedChecks[id];
       if (!c) return;
-      if (c.status === "ready" || c.status === "warning") {
-        checks[id] = { id, status: "idle", attempts: 0, stale: true };
-      } else if (c.status === "skipped") {
-        checks[id] = { ...checks[id], status: "skipped" };
-      }
+      // permissions need re-confirming after a refresh: mark as "check again quickly"
+      if (c.status === "ready" || c.status === "warning") checks[id] = { id, status: "idle", attempts: 0, stale: true };
+      else if (c.status === "skipped") checks[id] = { ...checks[id], status: "skipped" };
     });
-    if (checks.face.status === "waiting" && (saved.faceEnrolled || false)) checks.face.status = "waiting";
     state = {
       ...state,
       controls: { ...defaultControls, ...(saved.controls as Controls) },
@@ -825,38 +851,31 @@ export function boot() {
       resumeFlow: !!saved.resumeFlow,
       loading: false,
     };
-    if (state.phase === "started") state = { ...state, phase: "started" };
-    // stale face (ready before refresh) waits for camera
-    if (state.checks.face.stale) state.checks.face = { ...state.checks.face, status: "waiting", stale: false };
     try {
       history.replaceState({ phase: state.phase }, "", `#/${state.phase}`);
     } catch {
       /* ignore */
     }
-    // validate deep-link
     if (!allowed(state.phase)) goTo(firstIncompleteStep(), false);
-    onEnter(state.phase); // e.g. re-run the automatic internet check after a refresh
+    onEnter(state.phase);
   } else {
     restartFlow();
   }
 
-  // Deep link to a later step: popstate/goTo() redirect to the first incomplete step via allowed().
-
+  // Deep links to a later step redirect to the first incomplete step via allowed().
   window.addEventListener("popstate", (e) => {
     const p = (e.state as { phase?: Phase } | null)?.phase;
     if (!p) {
-      // never leave the flow
       try {
         history.pushState({ phase: state.phase }, "", `#/${state.phase}`);
       } catch {
         /* ignore */
       }
-      return;
+      return; // never leave the flow
     }
     if (state.phase === "started") return;
     goTo(p, false);
     if (state.phase !== p) {
-      // we redirected: keep the history stack in step so Back never leaves the flow
       try {
         history.pushState({ phase: state.phase }, "", `#/${state.phase}`);
       } catch {
@@ -864,16 +883,8 @@ export function boot() {
       }
     }
   });
-
-  // a ready camera/screen/fullscreen/network that breaks flips the row back
-  window.addEventListener("offline", () => {
-    if (!isReal) return;
-    handleBreak("network");
-  });
-  window.addEventListener("online", () => {
-    if (!isReal) return;
-    setOnline();
-  });
+  window.addEventListener("offline", () => isReal && handleBreak("network"));
+  window.addEventListener("online", () => isReal && setOnline());
 }
 
 /* ------------------------------------------------------------------ */

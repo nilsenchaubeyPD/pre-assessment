@@ -30,7 +30,6 @@ export function Accordion({ items, defaultOpen = null, className = "" }: { items
             >
               <span className="flex-1 text-body font-semibold text-ink">{it.title}</span>
               {it.chip}
-              {it.showWhy !== false && <span className="text-sec font-medium text-brand">{S.common.why}</span>}
               <Icon name="chevron" size={20} className={`text-muted transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
             </button>
             <div id={pid} role="region" hidden={!isOpen} className="border-t border-line px-4 py-3 text-sec text-body">

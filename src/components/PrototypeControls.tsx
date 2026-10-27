@@ -6,7 +6,6 @@ import {
   advanceClock,
   applyPreset,
   breakNow,
-  idleRecheck,
   resetAll,
   setControl,
   useApp,
@@ -23,7 +22,7 @@ const OPTS: Array<{ key: keyof Controls; label: string; options: Opt[] }> = [
   { key: "mic", label: "Microphone", options: [["ok", "OK"], ["blocked", "Blocked"], ["notfound", "Not found"], ["silent", "Silent"], ["noisy", "Noisy"]] },
   { key: "face", label: "Face", options: [["ok", "OK"], ["none", "No face"], ["multiple", "Multiple faces"], ["covered", "Covered"], ["far", "Too far"], ["close", "Too close"], ["dark", "Too dark"], ["nomatch", "Not recognised"]] },
   { key: "screen", label: "Screen", options: [["ok", "OK"], ["cancelled", "Cancelled"], ["tab", "Tab"], ["window", "Window"], ["multi", "Multiple displays"], ["osblocked", "OS blocked"], ["unsupported", "Unsupported"]] },
-  { key: "fullscreen", label: "Fullscreen", options: [["ok", "OK"], ["blocked", "Blocked"]] },
+  { key: "extensions", label: "Extensions", options: [["none", "None found"], ["found", "Found"]] },
   { key: "network", label: "Network", options: [["good", "Good"], ["slow", "Slow"], ["offline", "Offline"]] },
   { key: "start", label: "Start", options: [["success", "Success"], ["fail", "Fail"]] },
 ];
@@ -60,7 +59,6 @@ function Field({ def }: { def: (typeof OPTS)[number] }) {
 export function PrototypeControls() {
   const [open, setOpen] = useState(false);
   const failOnce = useApp((s) => s.controls.failOnce);
-  const coding = useApp((s) => s.controls.coding);
   if (typeof location !== "undefined" && new URLSearchParams(location.search).get("proto") === "0") return null;
   return (
     <div className="fixed bottom-24 left-3 z-40 sm:bottom-4">
@@ -108,21 +106,14 @@ export function PrototypeControls() {
                 <Btn onClick={() => breakNow("screen")}>Stop screen sharing</Btn>
                 <Btn onClick={() => breakNow("camera")}>Unplug camera</Btn>
                 <Btn onClick={() => breakNow("network")}>Go offline</Btn>
-                <Btn onClick={() => breakNow("fullscreen")}>Exit fullscreen</Btn>
                 <Btn onClick={advanceClock}>Advance clock to start time</Btn>
-                <Btn onClick={() => void idleRecheck()}>Simulate idle</Btn>
               </div>
             </div>
 
             <label className="flex items-center gap-2 text-sec text-ink">
-              <input type="checkbox" className="h-5 w-5 accent-[#1D5FD8]" checked={failOnce} onChange={(e) => setControl("failOnce", e.target.checked)} />
+              <input type="checkbox" className="h-5 w-5 accent-[#2563EB]" checked={failOnce} onChange={(e) => setControl("failOnce", e.target.checked)} />
               Fail once, then succeed
             </label>
-            <label className="flex items-center gap-2 text-sec text-ink">
-              <input type="checkbox" className="h-5 w-5 accent-[#1D5FD8]" checked={coding} onChange={(e) => setControl("coding", e.target.checked)} />
-              Practice includes a coding question
-            </label>
-
             <div className="grid grid-cols-2 gap-3">
               {OPTS.map((o) => (
                 <Field key={o.key} def={o} />

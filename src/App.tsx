@@ -1,44 +1,45 @@
 import { Header } from "./components/Header";
-import { Stepper } from "./components/Stepper";
 import { BannerSlot } from "./components/Banner";
 import { Toast } from "./components/Toast";
 import { PrototypeControls } from "./components/PrototypeControls";
 import { HelpDrawer } from "./help/HelpDrawer";
 import { Gate } from "./screens/Gate";
-import { Rules } from "./screens/Rules";
+import { Details } from "./screens/Details";
+import { Before } from "./screens/Before";
 import { Consent } from "./screens/Consent";
-import { GetReady } from "./screens/GetReady";
-import { Practice } from "./screens/Practice";
-import { Start } from "./screens/Start";
+import { Setup } from "./screens/Setup";
+import { Summary } from "./screens/Summary";
+import { Conduct } from "./screens/Conduct";
 import { Started } from "./screens/Started";
 import { S } from "./strings";
-import { getSteps, useApp } from "./state/flowMachine";
+import { useApp } from "./state/flowMachine";
 
 export default function App() {
   const s = useApp((x) => x);
   const phase = s.phase;
-  const steps = getSteps(s);
-  const inFlow = phase !== "gate" && phase !== "started";
 
   let screen: JSX.Element;
   switch (phase) {
     case "gate":
       screen = <Gate />;
       break;
-    case "rules":
-      screen = <Rules />;
+    case "details":
+      screen = <Details />;
+      break;
+    case "before":
+      screen = <Before />;
       break;
     case "consent":
       screen = <Consent />;
       break;
-    case "getReady":
-      screen = <GetReady />;
+    case "setup":
+      screen = <Setup />;
       break;
-    case "practice":
-      screen = <Practice />;
+    case "summary":
+      screen = <Summary />;
       break;
-    case "start":
-      screen = <Start />;
+    case "conduct":
+      screen = <Conduct />;
       break;
     default:
       screen = <Started />;
@@ -53,7 +54,6 @@ export default function App() {
         {S.header.skipToContent}
       </a>
       <Header />
-      {inFlow && <Stepper steps={steps} current={phase as (typeof steps)[number]} quick={steps.length === 1} />}
       <BannerSlot />
       <main id="main">{screen}</main>
       <HelpDrawer />

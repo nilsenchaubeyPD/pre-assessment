@@ -34,6 +34,11 @@ export class RealAdapter implements DeviceAdapter {
     }
   }
 
+  async checkExtensions(): Promise<CheckResult> {
+    await delay(400); // stub: browsers do not expose installed extensions
+    return { status: "ready" };
+  }
+
   async getCamera(): Promise<CheckResult> {
     if (!navigator.mediaDevices?.getUserMedia) return { status: "attention", code: "CAM_NOT_FOUND" };
     try {

@@ -4,64 +4,57 @@ import { S } from "../strings";
 
 export interface ActionBarProps {
   onBack?: () => void;
+  backDisabled?: boolean;
   primary: {
     label: React.ReactNode;
     onClick: () => void;
     disabled?: boolean;
     loading?: boolean;
-    large?: boolean;
   };
   hint?: React.ReactNode;
   hintLive?: boolean;
-  extra?: React.ReactNode; // e.g. text link under the hint
   tertiary?: React.ReactNode; // e.g. "I don't agree"
 }
 
-/** Footer action bar. Sticky at the bottom on mobile with safe-area padding. */
-export function ActionBar({ onBack, primary, hint, hintLive, extra, tertiary }: ActionBarProps) {
+/** Footer bar from the Figma frames: Back on the left, primary on the right, inside the 720px column. */
+export function ActionBar({ onBack, backDisabled, primary, hint, hintLive, tertiary }: ActionBarProps) {
   return (
     <>
-      <div className="h-32 sm:hidden" aria-hidden="true" />
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white px-4 pt-3 safe-bottom sm:static sm:mt-6 sm:border-0 sm:bg-transparent sm:p-0">
-        <div className="mx-auto flex max-w-content flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="hidden sm:block">
-            {onBack ? (
-              <Button variant="secondary" onClick={onBack}>
+      <div className="h-44 sm:h-24" aria-hidden="true" />
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-white px-4 py-3 safe-bottom sm:py-0 sm:pb-0">
+        <div className="mx-auto flex max-w-content flex-col gap-2 sm:h-16 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          {hint && (
+            <p className="text-center text-sec text-muted sm:order-2 sm:ml-auto sm:mr-2 sm:text-right" aria-live={hintLive ? "polite" : undefined}>
+              {hint}
+            </p>
+          )}
+          <div className={`flex items-center gap-3 sm:order-3 ${onBack ? "" : "sm:ml-auto"}`}>
+            {tertiary}
+            <Button
+              variant="primary"
+              className="flex-1 sm:flex-none"
+              disabled={primary.disabled}
+              loading={primary.loading}
+              onClick={primary.onClick}
+            >
+              {primary.label}
+            </Button>
+          </div>
+          {onBack && (
+            <div className="hidden sm:order-1 sm:block">
+              <Button variant="secondary" disabled={backDisabled} onClick={onBack}>
                 {S.common.back}
               </Button>
-            ) : null}
-          </div>
-          <div className="flex flex-col gap-2 sm:items-end">
-            {(hint || extra) && (
-              <div className="text-center sm:text-right">
-                {hint && (
-                  <p className="text-sec text-muted" aria-live={hintLive ? "polite" : undefined}>
-                    {hint}
-                  </p>
-                )}
-                {extra}
-              </div>
-            )}
-            <div className="flex items-center gap-3">
-              {onBack && (
-                <Button variant="secondary" className="sm:hidden" onClick={onBack}>
-                  {S.common.back}
-                </Button>
-              )}
-              {tertiary}
-              <Button
-                variant="primary"
-                large={primary.large}
-                className="flex-1 sm:flex-none"
-                disabled={primary.disabled}
-                loading={primary.loading}
-                onClick={primary.onClick}
-              >
-                {primary.label}
-              </Button>
             </div>
-          </div>
+          )}
         </div>
+        {onBack && (
+          <div className="mt-2 sm:hidden">
+            <Button variant="secondary" full disabled={backDisabled} onClick={onBack}>
+              {S.common.back}
+            </Button>
+          </div>
+        )}
       </div>
     </>
   );

@@ -14,9 +14,7 @@ export function Card({
 } & React.HTMLAttributes<HTMLElement>) {
   return (
     <Tag
-      className={`rounded-card bg-white p-6 sm:p-8 ${
-        emphasis ? "border-2 border-brand" : "border border-cardline"
-      } ${className}`}
+      className={`rounded-card bg-white p-4 sm:p-6 ${emphasis ? "border-2 border-brand" : "border border-cardline"} ${className}`}
       {...rest}
     >
       {children}
@@ -26,7 +24,7 @@ export function Card({
 
 export function CardTitle({ children, id, className = "" }: { children: React.ReactNode; id?: string; className?: string }) {
   return (
-    <h2 id={id} className={`text-section text-ink ${className}`}>
+    <h2 id={id} className={`text-sec font-semibold text-ink ${className}`}>
       {children}
     </h2>
   );

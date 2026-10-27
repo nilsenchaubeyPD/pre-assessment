@@ -36,7 +36,7 @@ export function InlineCountdown({ target }: { target: number }) {
   const txt = `${p.d > 0 ? `${p.d}d ` : ""}${pad(p.h)}:${pad(p.m)}:${pad(p.s)}`;
   return (
     <span aria-live="off" className="tabular-nums">
-      {S.start.opensIn} {txt}
+      {S.conduct.opensIn} {txt}
     </span>
   );
 }

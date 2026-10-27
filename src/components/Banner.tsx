@@ -1,23 +1,14 @@
 import React from "react";
 import { Icon, IconName, T } from "./primitives";
 import { S } from "../strings";
-import {
-  checkOk,
-  getCheckIds,
-  goTo,
-  focusFix,
-  useApp,
-  useServerNow,
-  getSteps,
-  firstProblem,
-} from "../state/flowMachine";
+import { fixCheck, getCheckIds, useApp, useServerNow } from "../state/flowMachine";
 
 type Tone = "info" | "review" | "warn" | "ok";
 const tones: Record<Tone, string> = {
-  info: "bg-brand-tint border-[#C9DAF8] text-ink",
+  info: "bg-brand-tint border-[#BFDBFE] text-ink",
   review: "bg-review-bg border-[#F3DC8B] text-review",
   warn: "bg-warn-bg border-[#F6C9A6] text-warn",
-  ok: "bg-ok-banner border-[#BBF7D0] text-ok",
+  ok: "bg-ok-banner border-okline text-ink",
 };
 
 export function Banner({
@@ -37,7 +28,7 @@ export function Banner({
     <div
       role={assertive ? "alert" : "status"}
       aria-live={assertive ? "assertive" : "polite"}
-      className={`flex items-start gap-3 rounded-ctrl border px-4 py-3 text-sec font-medium ${tones[tone]}`}
+      className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sec font-medium ${tones[tone]}`}
     >
       <Icon name={icon} size={20} className="mt-0.5" />
       <div className="flex-1">{children}</div>
@@ -46,7 +37,7 @@ export function Banner({
   );
 }
 
-/** Persistent banner slot, shown under the stepper on every flow step. */
+/** Persistent banner slot, shown under the header on every flow step. */
 export function BannerSlot() {
   const s = useApp((x) => x);
   const now = useServerNow();
@@ -62,33 +53,29 @@ export function BannerSlot() {
       </Banner>,
     );
   }
-  const broken = ids.filter((id) => s.checks[id].broken && id !== "internet");
-  broken.forEach((id) => {
-    const text = id === "screen" ? S.banners.screenStopped : id === "camera" ? S.banners.cameraLost : S.banners.fullscreenExited;
-    items.push(
-      <Banner
-        key={`b-${id}`}
-        tone="warn"
-        icon="alert"
-        assertive
-        action={
-          s.phase !== "getReady" && getSteps(s).includes("getReady") ? (
+  (["camera", "screen"] as const)
+    .filter((id) => ids.includes(id) && s.checks[id].broken)
+    .forEach((id) => {
+      items.push(
+        <Banner
+          key={`b-${id}`}
+          tone="warn"
+          icon="alert"
+          assertive
+          action={
             <button
-              className="shrink-0 rounded px-2 py-1 text-sec font-semibold text-brand underline"
-              onClick={() => {
-                goTo("getReady");
-                focusFix(id);
-              }}
+              type="button"
+              className="inline-flex min-h-[44px] shrink-0 items-center rounded px-2 text-sec font-semibold text-brand underline"
+              onClick={() => fixCheck(id)}
             >
               {S.banners.fixIt}
             </button>
-          ) : undefined
-        }
-      >
-        {text}
-      </Banner>,
-    );
-  });
+          }
+        >
+          {id === "screen" ? S.banners.screenStopped : S.banners.cameraLost}
+        </Banner>,
+      );
+    });
   if (s.controls.link === "early" && now < s.scheduledStart) {
     items.push(
       <Banner key="early" tone="review" icon="clock">
@@ -96,8 +83,6 @@ export function BannerSlot() {
       </Banner>,
     );
   }
-  void checkOk;
-  void firstProblem;
   if (!items.length) return null;
-  return <div className="mx-auto mt-4 flex w-full max-w-content flex-col gap-2 px-4 sm:px-6">{items}</div>;
+  return <div className="mx-auto mt-4 flex w-full max-w-content flex-col gap-2 px-4">{items}</div>;
 }

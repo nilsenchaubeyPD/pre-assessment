@@ -1,19 +1,15 @@
 import React, { useEffect, useRef } from "react";
 import { T } from "./primitives";
 
-/** Standard page shell: eyebrow, h1 (receives focus on mount so it is announced), subtitle. */
+/** Page shell from the Figma frames: 720px column, 24px title (receives focus on mount so it is announced). */
 export function StepFrame({
-  eyebrow,
   title,
-  subtitle,
   children,
-  narrow,
+  hideTitle,
 }: {
-  eyebrow?: string;
   title: string;
-  subtitle?: string;
   children: React.ReactNode;
-  narrow?: boolean;
+  hideTitle?: boolean;
 }) {
   const h1 = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -21,17 +17,11 @@ export function StepFrame({
     window.scrollTo({ top: 0 });
   }, [title]);
   return (
-    <div className={`animate-step-in mx-auto w-full px-4 py-8 sm:px-6 sm:py-10 ${narrow ? "max-w-[640px]" : "max-w-content"}`}>
-      {eyebrow && <p className="mb-2 text-sec font-medium text-brand">{eyebrow}</p>}
-      <h1 ref={h1} tabIndex={-1} className="text-title text-ink outline-none">
+    <div className="mx-auto w-full max-w-content animate-step-in px-4 pb-6 pt-6 sm:pt-9">
+      <h1 ref={h1} tabIndex={-1} className={`text-[22px] font-semibold leading-8 text-ink outline-none sm:text-[24px] ${hideTitle ? "sr-only" : "mb-6"}`}>
         <T s={title} />
       </h1>
-      {subtitle && (
-        <p className="mt-2 text-body text-body">
-          <T s={subtitle} />
-        </p>
-      )}
-      <div className="mt-8 flex flex-col gap-6">{children}</div>
+      <div className="flex flex-col gap-4">{children}</div>
     </div>
   );
 }

@@ -15,6 +15,7 @@ export interface SimOutcomes {
   screen: string;
   fullscreen: string;
   network: string;
+  extensions: string;
 }
 
 type Consume = (key: keyof SimOutcomes) => void;
@@ -71,6 +72,13 @@ export class SimulatedAdapter implements DeviceAdapter {
     if (n === "offline") return { status: "attention", code: "NET_OFFLINE" };
     if (n === "slow") return { status: "warning", code: "NET_SLOW" };
     return { status: "ready" };
+  }
+
+  async checkExtensions(): Promise<CheckResult> {
+    await delay(rand(400, 800));
+    const key = this.outcomes().extensions;
+    this.consume("extensions");
+    return key === "found" ? { status: "attention", code: "EXT_FOUND" } : { status: "ready" };
   }
 
   async getCamera(): Promise<CheckResult> {

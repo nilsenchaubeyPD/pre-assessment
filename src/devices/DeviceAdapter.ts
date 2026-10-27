@@ -5,10 +5,10 @@ export type ErrorCode =
   | "SCREEN_CANCELLED" | "SCREEN_TAB" | "SCREEN_WINDOW" | "SCREEN_MULTI" | "SCREEN_OS_BLOCKED"
   | "SCREEN_UNSUPPORTED" | "SCREEN_STOPPED"
   | "FULLSCREEN_BLOCKED" | "FULLSCREEN_EXITED"
-  | "NET_SLOW" | "NET_OFFLINE"
+  | "NET_SLOW" | "NET_OFFLINE" | "EXT_FOUND"
   | "START_FAILED";
 
-export type CheckId = "internet" | "camera" | "mic" | "face" | "screen" | "fullscreen";
+export type CheckId = "internet" | "extensions" | "camera" | "mic" | "screen";
 
 export type ResultStatus = "ready" | "warning" | "attention";
 
@@ -24,6 +24,8 @@ export interface DeviceAdapter {
   /** Live camera stream when the real adapter is used. Simulated adapters leave this null. */
   cameraStream: MediaStream | null;
   checkInternet(): Promise<CheckResult>;
+  /** Blocking browser extensions. The real adapter cannot detect them, so it reports none. */
+  checkExtensions(): Promise<CheckResult>;
   getCamera(): Promise<CheckResult>;
   getMicLevel(): Promise<CheckResult>;
   /** Subscribe to a live 0..1 mic level for the meter. Returns an unsubscribe fn. */

@@ -1,24 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { S } from "../strings";
+import { Icon, IconName } from "./primitives";
 import { adapter } from "../state/flowMachine";
 
-/** Mirrored live preview (real stream) or a neutral silhouette (simulated). */
-export function CameraPreview({
-  width = 160,
-  height = 120,
+/* ---------------- Silhouette building blocks ---------------- */
+const PERSON = "#94A3B8";
+const PERSON_DARK = "#64748B";
+
+/** Large camera stage (476x256 in the design): mirrored live stream, or a neutral silhouette when simulated. */
+export function CameraStage({
   oval = false,
   dark = false,
-  caption,
+  live = true,
   frozen = false,
-  status,
+  children,
 }: {
-  width?: number;
-  height?: number;
   oval?: boolean;
   dark?: boolean;
-  caption?: string;
+  live?: boolean;
   frozen?: boolean;
-  status?: string;
+  children?: React.ReactNode;
 }) {
   const vid = useRef<HTMLVideoElement>(null);
   const stream = adapter.cameraStream;
@@ -26,97 +27,150 @@ export function CameraPreview({
     if (vid.current && stream) vid.current.srcObject = stream;
   }, [stream]);
   return (
-    <figure className="m-0 inline-block">
-      <div
-        className="relative overflow-hidden rounded-ctrl bg-[#CBD3DF]"
-        style={{ width, height, maxWidth: "100%" }}
-      >
-        {stream ? (
-          <video ref={vid} autoPlay muted playsInline className="h-full w-full -scale-x-100 object-cover" aria-label="Your camera preview" />
-        ) : (
-          <svg viewBox="0 0 160 120" className="h-full w-full -scale-x-100" role="img" aria-label="Simulated camera preview">
-            <rect width="160" height="120" fill="#CBD3DF" />
-            <circle cx="80" cy="50" r="19" fill="#8794A8" />
-            <path d="M34 120c2-26 21-38 46-38s44 12 46 38z" fill="#8794A8" />
-          </svg>
-        )}
-        {dark && <div className="absolute inset-0 bg-black/55" aria-hidden="true" />}
-        {oval && (
-          <svg viewBox="0 0 160 120" className="absolute inset-0 h-full w-full" aria-hidden="true">
-            <defs>
-              <mask id="ovalMask">
-                <rect width="160" height="120" fill="white" />
-                <ellipse cx="80" cy="58" rx="34" ry="44" fill="black" />
-              </mask>
-            </defs>
-            <rect width="160" height="120" fill="rgba(31,42,61,0.45)" mask="url(#ovalMask)" />
-            <ellipse cx="80" cy="58" rx="34" ry="44" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray={frozen ? "0" : "5 4"} />
-          </svg>
-        )}
-        {!frozen && (
-          <span className="absolute left-2 top-2 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[12px] font-medium text-ink">
-            <span className="h-2 w-2 rounded-full bg-ok animate-pulse-dot" aria-hidden="true" />
-            {S.status.cameraOn}
-          </span>
-        )}
-        {status && (
-          <span className="absolute inset-x-0 bottom-0 bg-ink/70 px-2 py-1 text-center text-[13px] font-medium text-white">{status}</span>
-        )}
+    <div className="relative h-[220px] w-full overflow-hidden rounded-xl bg-subtle sm:h-[256px]">
+      {stream ? (
+        <video ref={vid} autoPlay muted playsInline className="h-full w-full -scale-x-100 object-cover" aria-label="Your camera preview" />
+      ) : (
+        <svg viewBox="0 0 476 256" preserveAspectRatio="xMidYMax slice" className="h-full w-full" role="img" aria-label="Simulated camera preview">
+          <circle cx="238" cy="102" r="35" fill={PERSON_DARK} />
+          <path d="M148 256c0-58 36-90 90-90s90 32 90 90z" fill={PERSON_DARK} />
+          {oval && <ellipse cx="238" cy="98" rx="58" ry="68" fill="none" stroke="#94A3B8" strokeWidth="1.6" strokeDasharray="5 4" />}
+        </svg>
+      )}
+      {dark && <div className="absolute inset-0 bg-black/55" aria-hidden="true" />}
+      {live && !frozen && (
+        <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-danger-bg px-2.5 py-1 text-[13px] font-medium text-ink">
+          <span className="h-1.5 w-1.5 rounded-full bg-danger animate-pulse-dot" aria-hidden="true" />
+          {S.setup.camera.cameraOn}
+        </span>
+      )}
+      {children}
+    </div>
+  );
+}
+
+/** The four example tiles on the "Allow Camera" step. */
+export function ExampleTile({ index, label, ok }: { index: number; label: string; ok: boolean }) {
+  const bg = index === 0 ? "#475569" : "#F8FAFC";
+  const fill = index === 0 ? "#334155" : PERSON;
+  return (
+    <figure className="m-0">
+      <div className="relative h-[112px] overflow-hidden rounded-lg border border-line sm:h-[141px]" style={{ background: bg }}>
+        <svg viewBox="0 0 232 141" preserveAspectRatio="xMidYMax slice" className="h-full w-full" aria-hidden="true">
+          {index === 0 && (<><circle cx="116" cy="40" r="14" fill={fill} /><path d="M80 141c0-30 14-46 36-46s36 16 36 46z" fill={fill} /></>)}
+          {index === 1 && (
+            <>
+              <circle cx="150" cy="40" r="15" fill={PERSON} /><path d="M112 141c0-32 15-48 38-48s38 16 38 48z" fill={PERSON} />
+              <circle cx="82" cy="58" r="10" fill="#CBD5E1" /><path d="M56 141c0-22 10-34 26-34s26 12 26 34z" fill="#CBD5E1" />
+            </>
+          )}
+          {index === 2 && (<><circle cx="2" cy="48" r="14" fill={PERSON} /><path d="M-22 141c0-30 14-46 36-46s26 10 30 46z" fill={PERSON} /></>)}
+          {index === 3 && (<><circle cx="116" cy="40" r="15" fill={PERSON} /><path d="M78 141c0-32 15-48 38-48s38 16 38 48z" fill={PERSON} /></>)}
+        </svg>
+        <span
+          className={`absolute bottom-2 right-2 inline-flex h-5 w-5 items-center justify-center rounded text-white ${ok ? "bg-okline" : "bg-danger"}`}
+          aria-hidden="true"
+        >
+          <Icon name={ok ? "check" : "x"} size={14} />
+        </span>
       </div>
-      {caption && <figcaption className="mt-1.5 text-sec text-muted">{caption}</figcaption>}
+      <figcaption className="mt-1.5 text-center text-[12px] font-medium text-ink">
+        <span className="sr-only">{ok ? "Good example: " : "Avoid: "}</span>
+        {label}
+      </figcaption>
     </figure>
   );
 }
 
-export function MicMeter({ active }: { active: boolean }) {
-  const [level, setLevel] = useState(0);
+/** Recording bars: light blue, moving while `active`. */
+export function MicBars({ active }: { active: boolean }) {
+  const [level, setLevel] = useState<number[]>(Array(9).fill(0.4));
   useEffect(() => {
-    if (!active) {
-      setLevel(0);
-      return;
-    }
+    if (!active) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const off = adapter.watchMic((l) => setLevel(reduce ? Math.round(l * 4) / 4 : l));
+    let hist = Array(9).fill(0.3);
+    const off = adapter.watchMic((l) => {
+      hist = [...hist.slice(1), reduce ? 0.5 : Math.max(0.15, l)];
+      setLevel(hist);
+    });
     return off;
   }, [active]);
-  const bars = 8;
-  const lit = Math.round(level * bars);
   return (
-    <div className="flex h-8 items-end gap-1" role="meter" aria-label={S.ready.mic.meter} aria-valuemin={0} aria-valuemax={8} aria-valuenow={lit}>
-      {Array.from({ length: bars }).map((_, i) => (
-        <span
-          key={i}
-          className={`w-2 rounded-sm transition-colors duration-100 ${i < lit ? (i > 5 ? "bg-review" : "bg-ok") : "bg-line"}`}
-          style={{ height: `${10 + i * 3}px` }}
-        />
+    <div className="flex h-12 items-center justify-center gap-2" role="meter" aria-label={S.setup.mic.meter} aria-valuemin={0} aria-valuemax={1} aria-valuenow={level[level.length - 1]}>
+      {level.map((l, i) => (
+        <span key={i} className="w-3 rounded-full bg-[#BFDBFE] transition-[height] duration-100" style={{ height: `${10 + l * 34}px` }} />
       ))}
     </div>
   );
 }
 
-/** Small static illustration of the browser's share picker with "Entire Screen" highlighted. */
-export function ScreenPickerIllustration() {
+/** Browser share picker with "Entire Screen" selected. */
+export function ScreenPicker() {
   return (
-    <figure className="m-0 max-w-[320px]" aria-label="Illustration of the browser sharing window with the Entire Screen tab highlighted">
-      <div className="overflow-hidden rounded-ctrl border border-ctrl bg-white shadow-sm">
-        <div className="border-b border-line bg-subtle px-3 py-2 text-[13px] font-medium text-ink">{S.ready.screen.pickerTitle}</div>
-        <div className="flex gap-1 px-3 pt-2">
-          {S.ready.screen.pickerTabs.map((t, i) => (
-            <span
-              key={t}
-              className={`px-2 pb-1.5 text-[13px] ${i === 2 ? "border-b-2 border-brand font-semibold text-brand" : "text-muted"}`}
-            >
+    <figure className="m-0 overflow-hidden rounded-xl border border-line bg-white" aria-label="Illustration of the browser sharing window with Entire Screen selected">
+      <div className="px-4 pt-4">
+        <p className="text-sec font-semibold text-ink">{S.setup.screen.pickerTitle}</p>
+        <p className="text-[13px] text-body">{S.setup.screen.pickerSub}</p>
+        <div className="mt-3 flex gap-5">
+          {S.setup.screen.pickerTabs.map((t, i) => (
+            <span key={t} className={`pb-2 text-[13px] font-medium ${i === 2 ? "border-b-2 border-brand text-brand" : "text-body"}`}>
               {t}
             </span>
           ))}
         </div>
-        <div className="flex items-center justify-center gap-3 px-3 py-4">
-          <div className="flex h-14 w-24 items-center justify-center rounded border-2 border-brand bg-brand-tint">
-            <span className="h-6 w-10 rounded-sm bg-[#9DBBF2]" />
+      </div>
+      <div className="flex justify-center bg-subtle px-4 py-4">
+        <div className="w-[146px] rounded-lg border-2 border-brand bg-white p-0 text-center">
+          <div className="m-[3px] overflow-hidden rounded bg-[#7C9CE6]">
+            <div className="flex h-[66px] items-center justify-center gap-2 px-2">
+              <span className="h-10 w-[58px] rounded-sm bg-[#F1F5F9]" />
+              <span className="h-8 w-[46px] rounded-sm bg-[#DBE4F7]" />
+            </div>
+            <div className="h-2 bg-[#1E2A4A]" />
           </div>
-          <span className="text-[13px] font-medium text-brand">{S.ready.screen.pickerNote}</span>
+          <p className="pb-1 text-[12px] text-ink">{S.setup.screen.screenLabel}</p>
         </div>
       </div>
     </figure>
+  );
+}
+
+/** Three-step pill stepper (Camera, Microphone, Screen Sharing). */
+export function SetupStepper({
+  tabs,
+  current,
+  done,
+}: {
+  tabs: Array<"camera" | "mic" | "screen">;
+  current: "camera" | "mic" | "screen";
+  done: Record<string, boolean>;
+}) {
+  const icons: Record<string, IconName> = { camera: "camera", mic: "mic", screen: "screen" };
+  return (
+    <nav aria-label={S.setup.stepperLabel} className="mb-4">
+      <ol className="flex items-center">
+        {tabs.map((t, i) => {
+          const cur = t === current;
+          const d = done[t] && !cur;
+          return (
+            <li key={t} className={`flex items-center ${i < tabs.length - 1 ? "flex-1" : ""}`} aria-current={cur ? "step" : undefined}>
+              <span
+                className={`inline-flex h-8 items-center gap-2 rounded-full border text-sec font-medium ${
+                  cur ? "border-transparent bg-brand-tint px-3 text-brand" : d ? "w-8 justify-center border-okline bg-okline text-white" : "w-8 justify-center border-line bg-white text-ink"
+                }`}
+              >
+                <Icon name={icons[t]} size={16} />
+                {cur && S.setup.tabs[t]}
+                <span className="sr-only">
+                  {!cur && S.setup.tabs[t]}
+                  {d && ` ${S.setup.done}`}
+                </span>
+              </span>
+              {i < tabs.length - 1 && <span className="mx-2 h-px flex-1 bg-line" aria-hidden="true" />}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }

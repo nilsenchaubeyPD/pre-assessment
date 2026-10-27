@@ -33,6 +33,19 @@ const paths: Record<string, React.ReactNode> = {
   wrench: <path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5-2-2z" />,
   user: (<><circle cx="12" cy="8.5" r="3.5" /><path d="M5 20c.8-3.6 3.5-5.5 7-5.5s6.2 1.9 7 5.5" /></>),
   chat: <path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 16.5h-7l-4.5 3.5v-3.5H5A1.5 1.5 0 0 1 3.5 15V7A1.5 1.5 0 0 1 5 5.5z" />,
+  layers: (<><path d="M12 3.5l8.5 4.5-8.5 4.5L3.5 8 12 3.5z" /><path d="M3.5 12l8.5 4.5 8.5-4.5" /><path d="M3.5 16l8.5 4.5 8.5-4.5" /></>),
+  shield: (<><path d="M12 3l7.5 2.8v5.7c0 4.4-3 7.6-7.5 9.5-4.5-1.9-7.5-5.1-7.5-9.5V5.8L12 3z" /><path d="M8.8 12l2.2 2.2 4.2-4.4" /></>),
+  globe: (<><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3c2.6 2.6 3.8 5.6 3.8 9S14.6 18.4 12 21c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z" /></>),
+  sun: (<><circle cx="12" cy="12" r="3.8" /><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4" /></>),
+  windowApp: (<><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 9.5h18" /></>),
+  activity: <path d="M3 12h4l2.5-6 4 12 2.5-6H21" />,
+  users: (<><circle cx="9" cy="8.5" r="3" /><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6" /><path d="M15.5 5.8a3 3 0 0 1 0 5.4M17.5 14.7c1.8.6 3 2 3.5 4.3" /></>),
+  phone: (<><rect x="7" y="3" width="10" height="18" rx="2" /><path d="M11 18h2" /></>),
+  doc: (<><path d="M7 3.5h7l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z" /><path d="M14 3.5V8h4M9 12.5h6M9 16h4" /></>),
+  play: <path d="M8 5.5v13l10.5-6.5L8 5.5z" />,
+  arrowDown: <path d="M12 4.5v13M6.5 12L12 17.5 17.5 12" />,
+  arrowUp: <path d="M12 19.5v-13M6.5 12L12 6.5l5.5 5.5" />,
+  alertOctagon: (<><path d="M8.2 3.5h7.6l4.7 4.7v7.6l-4.7 4.7H8.2l-4.7-4.7V8.2l4.7-4.7z" /><path d="M12 8v4.5" /><path d="M12 15.6h.01" /></>),
 };
 
 export type IconName = keyof typeof paths;
@@ -107,10 +120,10 @@ export const Button = React.forwardRef<HTMLButtonElement, BtnProps>(function But
   ref,
 ) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-ctrl font-medium text-[15px] leading-5 transition-colors select-none " +
+    "inline-flex items-center justify-center gap-2 rounded-ctrl font-medium text-sec transition-colors select-none " +
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-ring focus-visible:ring-offset-2 " +
     "disabled:cursor-not-allowed ";
-  const size = large ? "h-12 px-8 text-base sm:h-[52px]" : "h-12 sm:h-11 px-5";
+  const size = large ? "h-12 px-8 text-body" : "h-12 sm:h-10 px-4";
   const styles: Record<Variant, string> = {
     primary: "bg-brand text-white hover:bg-brand-hover disabled:bg-[#B9C7E4] disabled:text-white",
     secondary: "bg-white text-ink border border-ctrl hover:bg-subtle disabled:text-muted disabled:bg-subtle",
@@ -138,27 +151,6 @@ export const Button = React.forwardRef<HTMLButtonElement, BtnProps>(function But
   );
 });
 
-/* ---------------- Logo ---------------- */
-export function Logo({ className = "" }: { className?: string }) {
-  return (
-    <span className={`inline-flex items-center gap-2 ${className}`} aria-label="topin.tech">
-      <svg width="26" height="28" viewBox="0 0 26 28" aria-hidden="true">
-        <defs>
-          <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#FF4D8D" />
-            <stop offset="1" stopColor="#D1126B" />
-          </linearGradient>
-        </defs>
-        <path d="M13 1.5l10.5 3.7v8.4c0 6.2-4.2 10.6-10.5 13-6.3-2.4-10.5-6.8-10.5-13V5.2L13 1.5z" fill="url(#lg)" />
-        <path d="M8.5 13.5l3 3 6-6.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </svg>
-      <span className="text-[20px] font-semibold leading-none tracking-tight">
-        <span className="text-navy">topin</span>
-        <span className="text-magenta">.tech</span>
-      </span>
-    </span>
-  );
-}
 
 /* ---------------- Truncating text with tooltip (long names) ---------------- */
 export function Truncate({ children, className = "" }: { children: string; className?: string }) {

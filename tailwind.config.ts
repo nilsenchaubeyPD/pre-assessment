@@ -25,8 +25,8 @@ const config: Config = {
         busy: { DEFAULT: colors.checking, bg: colors.checkingBg },
         tip: colors.tooltip,
         tabs: colors.tabs,
-        navy: colors.navy,
-        magenta: colors.magenta,
+        danger: { DEFAULT: colors.danger, bg: colors.dangerBg, text: colors.dangerText },
+        okline: colors.successLine,
       },
       fontSize: {
         title: ["28px", { lineHeight: "36px", fontWeight: "600" }],
@@ -35,8 +35,8 @@ const config: Config = {
         sec: ["14px", { lineHeight: "20px" }],
         th: ["13px", { lineHeight: "18px", fontWeight: "500" }],
       },
-      borderRadius: { card: "12px", ctrl: "8px" },
-      maxWidth: { content: "880px" },
+      borderRadius: { card: "16px", ctrl: "8px" },
+      maxWidth: { content: "720px" },
       keyframes: {
         stepIn: { from: { opacity: "0", transform: "translateY(8px)" }, to: { opacity: "1", transform: "none" } },
         pulseDot: { "0%,100%": { opacity: "1" }, "50%": { opacity: "0.35" } },

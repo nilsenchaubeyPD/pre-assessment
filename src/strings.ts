@@ -1,30 +1,13 @@
 // All user-facing copy lives here (one file, ready for translation).
 // Text in [square brackets] is a placeholder and renders with a dotted underline.
+// Flow follows the Figma file "Pre-Assessment Journey".
 
 export const S = {
-  brand: { name: "topin.tech" },
-
   header: {
-    help: "Get help",
+    report: "Report",
     skipToContent: "Skip to content",
-  },
-
-  stepper: {
-    labels: {
-      rules: "Rules",
-      consent: "Consent",
-      getReady: "Get ready",
-      practice: "Practice",
-      start: "Start",
-      quick: "Quick check",
-    },
-    aboutTime: "About 5 min",
-    stepsLeft: (n: number) => (n === 1 ? "1 step left" : `${n} steps left`),
-    mobile: (i: number, total: number) => `Step ${i} of ${total} · About 5 min`,
-    eyebrow: (i: number, total: number) => `Step ${i} of ${total}`,
-    completed: "Completed",
-    current: "Current step",
-    upcoming: "Upcoming",
+    logo: "[Company logo]",
+    net: { checking: "Checking", good: "Excellent", slow: "Slow", offline: "Offline" },
   },
 
   common: {
@@ -36,13 +19,14 @@ export const S = {
     copy: "Copy",
     copied: "Copied",
     optional: "Optional",
-    why: "Why?",
     linkCopied: "Link copied",
     copyLink: "Copy test link",
     emailLink: "Email me the link",
-    emailLinkSent: "We sent the link to [email]",
+    emailLinkSent: "We sent the link to your email",
     errorCode: (c: string) => `Error ${c}`,
-    placeholderNote: "Placeholder",
+    skip: "Skip for now",
+    stuck: "Still stuck?",
+    stuckCta: "Get help",
   },
 
   banners: {
@@ -50,21 +34,7 @@ export const S = {
     offline: "You're offline. We'll pick up where you left off when you're back.",
     screenStopped: "Screen sharing stopped. Share again to continue.",
     cameraLost: "Your camera disconnected. Reconnect it and check again.",
-    fullscreenExited: "You left fullscreen. Turn it on again to continue.",
     fixIt: "Fix it",
-  },
-
-  status: {
-    idle: "Not checked",
-    checking: "Checking...",
-    ready: "Ready",
-    warning: "Heads up",
-    attention: "Needs attention",
-    waiting: (item: string) => `Waiting for ${item}`,
-    skipped: "Skipped",
-    optional: "Optional",
-    sharing: "Sharing",
-    cameraOn: "Camera on",
   },
 
   // ---------------- GATE ----------------
@@ -80,7 +50,7 @@ export const S = {
       noEarlyTitle: "Your test opens on [Date] at [Time]",
       noEarlyBody: "Come back at [Time]. We'll be ready.",
       openNowTitle: "Your test is open now",
-      openNowBody: "Press Continue to start setup. Your timer only starts on the last step.",
+      openNowBody: "Press Continue to start setup. Your timer only starts at the end.",
       days: "Days",
       hours: "Hours",
       minutes: "Minutes",
@@ -146,170 +116,102 @@ export const S = {
     },
   },
 
-  // ---------------- RULES ----------------
-  rules: {
-    title: "Before you begin",
-    subtitle: "Everything you need is here, once. We won't repeat it for every section.",
-    summary: {
-      assessment: "Assessment",
-      starts: "Starts",
-      time: "Time allowed",
-      sections: "Sections",
-    },
-    expect: {
-      title: "What to expect",
-      recording: { label: "Recording", body: "Your camera and screen are recorded during the test." },
-      recordingMic: {
-        label: "Recording",
-        body: "Your camera, microphone and screen are recorded during the test.",
-      },
-      time: { label: "Time", body: "Your [Duration] timer starts when you press Start on the last step." },
-      timeShort: { label: "Time", body: "Your [Duration] timer starts when you press Start on the last step." },
-      help: { label: "Help", body: "Get help is at the top of every screen." },
-    },
-    keep: { title: "Three things to keep during the test" },
-    keepNon: { title: "Things to know during the test" },
-    nonRules: [
-      { title: "Use one device", why: "Switching devices mid-test can lose your answers." },
-      { title: "Stay on the test page", why: "Leaving the page can interrupt your timer and your answers." },
-      { title: "Keep your internet steady", why: "A steady connection keeps your answers saving as you go." },
-    ],
-    conduct: "Read the full Code of Conduct",
-    conductTitle: "Code of Conduct",
-    conductBody: "[Full Code of Conduct text]",
-    hint: "Takes about 5 minutes.",
-    hintNon: "Takes about 2 minutes.",
-    agreedChip: "You agreed on [date].",
-    review: "Review",
+  // ---------------- 01 DETAILS ----------------
+  details: {
+    totalSections: "Total Sections",
+    duration: "Assessment duration",
+    confirmTitle: "Please check the details and confirm your identity",
+    logout: "Not you? Log out",
+    loggedOut: "Logged out. Open your invitation link to sign in again.",
+    confirm: "Confirm and Continue",
   },
 
-  // ---------------- CONSENT ----------------
-  consent: {
-    title: "Your camera and screen are recorded",
-    subtitle: "Please read this before you agree. It takes a minute.",
+  // ---------------- 02 BEFORE YOU BEGIN ----------------
+  before: {
+    title: "Hi [First name], before you begin",
+    need: "What you'll need",
+    space: "Get your space ready",
     rows: {
-      record: {
-        label: "What we record",
-        value: "Your camera video and your screen during the test. Your microphone, if this test uses it.",
-      },
-      why: {
-        label: "Why",
-        value: "To confirm it is you taking the test and to keep it fair for everyone.",
-      },
-      who: { label: "Who can see it", value: "[Roles who can view recordings]" },
-      keep: { label: "How long we keep it", value: "[Retention period]" },
-      choices: { label: "Your choices", value: "[How to ask a question or withdraw consent]" },
+      internet: { label: "Internet", body: "At least 5 Mbps." },
+      extensions: { label: "Browser extensions", body: "Blocked extensions must be turned off." },
+      camera: { label: "Camera", body: "Stays on for the whole assessment." },
+      mic: { label: "Microphone", body: "Audio is monitored." },
+      screen: { label: "Screen Sharing", body: "Share your entire screen. Use one screen only." },
+      browser: { label: "Browser", body: "Google Chrome is recommended." },
+      room: { label: "Room", body: "Quiet and well lit, so your face is clear." },
+      apps: { label: "Apps", body: "Close other tabs and apps. Turn off notifications." },
+      power: { label: "Power", body: "Plug in your charger, or fully charge." },
     },
-    thColumn: "Topic",
-    thValue: "Details",
-    checkbox: "I understand what is recorded and I agree to be recorded for this test.",
-    agree: "Agree and continue",
-    disabledHint: "Tick the box to continue.",
+    badge: {
+      excellent: "Excellent",
+      slow: "Slow",
+      offline: "Offline",
+      checking: "Checking",
+      none: "None Found",
+      found: "Found",
+    },
+    slowFix: "Your connection is slow. You can continue, but pages may load slowly. Move closer to your router or switch to a stronger network.",
+    offlineFix: "You're offline. Reconnect to continue.",
+    extFix: "We found extensions that can block the test. Turn them off in your browser, then press Check again.",
+    checkAgain: "Check again",
+    hintBlocked: "Fix the item above to continue.",
+  },
+
+  // ---------------- 03 CONSENT ----------------
+  consent: {
+    title: "Monitoring and Consent",
+    rows: {
+      camera: { label: "Camera", body: "To confirm it is you, and alone." },
+      audio: { label: "Audio", body: "To detect voices." },
+      screen: { label: "Screen Sharing", body: "To see what is open." },
+      activity: { label: "Activity", body: "Tab switches and device details." },
+    },
+    agree: "I Agree and Continue",
     decline: "I don't agree",
     declineModal: {
-      title: "You can't take this test without recording",
-      body: "This test needs your camera and screen so the result is fair for everyone. If you have a concern, contact support before the test closes.",
+      title: "You can't take this test without monitoring",
+      body: "This test needs your camera, audio and screen so the result is fair for everyone. If you have a concern, contact support before the test closes.",
       review: "Go back and review",
     },
   },
 
-  // ---------------- GET READY ----------------
-  ready: {
-    title: "Get ready",
-    subtitle: "We'll check each item. If something needs fixing, the fix shows up right next to it.",
-    progress: (n: number, total: number) => `${n} of ${total} ready`,
-    runAll: "Run all checks",
-    running: "Checking...",
-    left: (n: number) => (n === 1 ? "1 check left" : `${n} checks left`),
-    allPassed: "All checks passed",
-    goToFirst: "Go to the first item that needs attention",
-    stuck: "Still stuck?",
-    stuckCta: "Get help",
-    checkAgainQuick: "Check again quickly",
-    skip: "Skip for now",
-    attempts: "Still not working?",
-    quickTitle: "Quick check",
-    quickSubtitle: "We'll make sure your setup still works before you go back in.",
-    quickContinue: "Back to my test",
-
-    internet: {
-      title: "Internet",
-      idle: "We'll check your connection.",
-      ready: "Your connection looks good.",
-      slowShort: "Your connection is slow, but you can continue.",
-      offlineShort: "You're offline.",
-      NET_SLOW:
-        "Your connection is slow. You can continue, but pages may load slowly. Move closer to your router or switch to a stronger network.",
-      NET_OFFLINE: "You're offline. Reconnect to continue.",
-      action: "Check connection",
-      again: "Check again",
-    },
+  // ---------------- 04-12 SETUP ----------------
+  setup: {
+    tabs: { camera: "Camera", mic: "Microphone", screen: "Screen Sharing" },
+    stepperLabel: "Device setup",
+    done: "done",
 
     camera: {
-      title: "Camera",
-      idle: "We'll ask your browser for permission. Choose Allow.",
-      checking: "Waiting for your permission...",
-      checkingLong: "Don't see the prompt? Look near the address bar.",
-      ready: "Your camera works.",
-      attentionShort: "We couldn't turn on your camera.",
-      anotherCamera: "Built-in camera",
-      cameras: ["Built-in camera", "USB webcam"],
-      caption: "This is what we see.",
-      different: "Use a different camera",
-      cameraLabel: "Camera",
-      action: "Check camera",
+      allowText:
+        "Allow camera access. A box will appear at the top-left of your browser. Choose Allow while visiting the site.",
+      examples: [
+        { label: "Too dark", ok: false },
+        { label: "More than one person", ok: false },
+        { label: "Face cut off", ok: false },
+        { label: "Clear and well lit", ok: true },
+      ],
+      allow: "Allow Camera",
+      waiting: "Waiting for your permission...",
+      waitingLong: "Don't see the prompt? Look near the address bar.",
+      cameraOn: "Camera on",
+      photoText: "Take your photo. We'll use it to verify you throughout the assessment.",
+      returningText: "Your face is already set up. Quick check.",
+      takePhoto: "Take Photo",
+      retake: "Retake",
+      verify: "Verify Your Photo",
+      verifying: "Verifying...",
+      darkNote: "Your camera looks dark. Face a window or turn on a light.",
       CAM_BLOCKED:
         "Camera is blocked. Click the camera icon in your browser's address bar, choose Allow, then press Try again.",
       CAM_DISMISSED:
-        "We didn't get permission. Press Check camera and choose Allow when your browser asks.",
+        "We didn't get permission. Press Allow Camera and choose Allow when your browser asks.",
       CAM_NOT_FOUND:
         "We can't find a camera. Connect a webcam or check your laptop camera is on, then press Try again.",
       CAM_IN_USE:
         "Another app is using your camera. Close apps like Zoom, Teams or Meet, then press Try again.",
       CAM_OS_BLOCKED:
         "Your computer is blocking the camera for this browser. Open System Settings, then Privacy and Security, then Camera, and turn on [Browser]. Restart the browser, then reopen this link.",
-      CAM_DARK: "Your camera looks dark. Face a window or turn on a light.",
       CAM_LOST: "Your camera disconnected. Reconnect it, then press Try again.",
-    },
-
-    mic: {
-      title: "Microphone",
-      idle: "Say a few words when the meter is moving.",
-      ready: "We can hear you.",
-      attentionShort: "We couldn't hear your microphone.",
-      different: "Use a different microphone",
-      mics: ["Built-in microphone", "Headset microphone"],
-      action: "Test microphone",
-      MIC_BLOCKED:
-        "Microphone is blocked. Click the lock icon in your browser's address bar, choose Allow, then press Try again.",
-      MIC_NOT_FOUND:
-        "We can't find a microphone. Connect one or check your headset, then press Try again.",
-      MIC_SILENT:
-        "We can't hear anything. Check that your microphone isn't muted, then speak again.",
-      MIC_NOISY: "It's noisy around you. Move somewhere quieter if you can.",
-      meter: "Microphone level",
-    },
-
-    face: {
-      title: "Face",
-      waiting: "Starts once your camera is ready.",
-      waitingFor: "camera",
-      returning: "Your face is already set up. Quick check.",
-      returningAction: "Check my face",
-      enrollIdle: "We'll save a photo of your face. You only do this once.",
-      checking: "Hold still...",
-      ready: "Your face is confirmed.",
-      attentionShort: "We couldn't confirm your face.",
-      saved: "Face saved. You won't need to do this again.",
-      enrollTitle: "One-time face setup",
-      enrollBody:
-        "We'll save a photo of your face so we can confirm it's you each time. You only do this once.",
-      tips: ["Face the light", "Look straight at the camera", "Remove cap, mask or sunglasses"],
-      takePhoto: "Take photo",
-      review: "Does this look right?",
-      use: "Use this photo",
-      retake: "Retake",
-      action: "Check my face",
       FACE_NONE: "We can't see a face. Move into the frame so your whole face is visible.",
       FACE_MULTIPLE: "We can see more than one person. Make sure you're alone in the frame.",
       FACE_COVERED: "Part of your face is covered. Remove cap, mask or sunglasses.",
@@ -318,21 +220,48 @@ export const S = {
       FACE_DARK: "Your face is hard to see. Face the light.",
       FACE_NO_MATCH:
         "We couldn't match your face to your setup photo. Check the lighting and try again.",
+      stillNot: "Still not working?",
+      different: "Use a different camera",
+      cameras: ["Built-in camera", "USB webcam"],
+    },
+
+    mic: {
+      allowText: "Allow microphone access. Choose Allow while visiting the site.",
+      builtIn: "Use your laptop's built-in microphone. Earphones and headsets aren't allowed.",
+      allow: "Allow microphone",
+      say: "Say:",
+      phrase: "\u201CI am ready to begin the assessment.\u201D",
+      record: "Record",
+      stop: "Stop Recording...",
+      heard: "What we heard:",
+      play: "Play",
+      playing: "Playing...",
+      meter: "Microphone level",
+      MIC_BLOCKED:
+        "Microphone is blocked. Click the lock icon in your browser's address bar, choose Allow, then press Try again.",
+      MIC_NOT_FOUND:
+        "We can't find a microphone. Connect one or check your laptop microphone is on, then press Try again.",
+      MIC_SILENT:
+        "We can't hear anything. Check that your microphone isn't muted, then press Record and speak again.",
+      MIC_NOISY: "It's noisy around you. Move somewhere quieter if you can.",
     },
 
     screen: {
-      title: "Screen sharing",
-      idle: "Choose Entire Screen when your browser asks. A tab or a window won't work.",
-      ready: "Your entire screen is shared.",
-      attentionShort: "We couldn't share your entire screen.",
-      action: "Share entire screen",
+      steps: [
+        "Click Share screen.",
+        "In the Chrome box, choose Entire screen.",
+        "Select your screen and click Share.",
+      ],
+      pickerTitle: "Choose what to share",
+      pickerSub: "topin.tech wants to share your screen",
+      pickerTabs: ["Chrome Tab", "Window", "Entire Screen"],
+      screenLabel: "Screen 1",
+      share: "Share Screen",
+      sharing: "Sharing...",
       again: "Share again",
       disconnected: "I've disconnected it",
-      pickerTitle: "Choose what to share",
-      pickerTabs: ["Chrome Tab", "Window", "Entire Screen"],
-      pickerNote: "Pick Entire Screen",
       SCREEN_CANCELLED:
-        "You closed the sharing window. Press Share entire screen and choose Entire Screen.",
+        "You closed the sharing window. Press Share Screen and choose Entire Screen.",
       SCREEN_TAB: "You shared a browser tab. Share your Entire Screen instead.",
       SCREEN_WINDOW: "You shared a single window. Share your Entire Screen instead.",
       SCREEN_MULTI:
@@ -343,103 +272,70 @@ export const S = {
       SCREEN_STOPPED: "Screen sharing stopped. Share again to continue.",
     },
 
-    fullscreen: {
-      title: "Fullscreen",
-      idle: "The test runs in fullscreen.",
-      ready: "Fullscreen is on.",
-      attentionShort: "Fullscreen isn't on.",
-      action: "Enter fullscreen",
-      FULLSCREEN_BLOCKED: "Your browser blocked fullscreen. Press the button again or press F11.",
-      FULLSCREEN_EXITED: "You left fullscreen. Turn it on again to continue.",
-    },
-
     browserTabs: {
       label: "Browser instructions",
       items: [
         {
           id: "chrome",
           label: "Chrome / Edge",
-          steps: [
-            "Click the camera icon in the address bar.",
-            "Choose Allow, then press Done.",
-            "Press Try again below.",
-          ],
+          steps: ["Click the camera icon in the address bar.", "Choose Allow, then press Done.", "Press Try again below."],
         },
         {
           id: "safari",
           label: "Safari",
-          steps: [
-            "Open Safari, then Settings for This Website.",
-            "Set Camera to Allow.",
-            "Press Try again below.",
-          ],
+          steps: ["Open Safari, then Settings for This Website.", "Set Camera to Allow.", "Press Try again below."],
         },
         {
           id: "firefox",
           label: "Firefox",
-          steps: [
-            "Click the camera icon in the address bar.",
-            "Clear the blocked setting, then reload.",
-            "Press Try again below.",
-          ],
+          steps: ["Click the camera icon in the address bar.", "Clear the blocked setting, then reload.", "Press Try again below."],
         },
       ],
     },
   },
 
-  // ---------------- PRACTICE ----------------
-  practice: {
-    title: "Try a practice question",
-    subtitle:
-      "Optional. See how questions look and how to answer, so nothing surprises you in the real test. Nothing here is scored or timed.",
-    pill: "Practice, not scored",
-    q1: "What is 2 + 3?",
-    options: ["4", "5", "6"],
-    correctIndex: 1,
-    correct: "Correct. This is how you pick an answer.",
-    incorrect: "Not this one, and that is fine. This is only to show how questions look.",
-    q2: "Write a line that prints the sum of 2 and 3.",
-    run: "Run",
-    output: "Output",
-    sampleOutput: "5",
-    codeNote: "In the real test you can run your code before you submit.",
-    skip: "Skip practice",
+  // ---------------- 13 SUMMARY ----------------
+  summary: {
+    title: "Everything is set",
+    passed: (n: number, total: number) => `${n} of ${total} checks passed`,
+    needsAttention: (n: number, total: number) => `${n} of ${total} checks passed. One needs attention`,
+    fixIt: "Fix it",
+    rows: {
+      internet: { label: "Internet", ok: "Excellent", slow: "Slow", offline: "Offline" },
+      consent: { label: "Consent", ok: "Agreed to be recorded", no: "Not agreed yet" },
+      extensions: { label: "Browser extensions", ok: "No blocked extensions found", no: "Blocked extensions found" },
+      camera: { label: "Camera", ok: "Camera on, Identity confirmed", no: "Needs attention" },
+      mic: { label: "Microphone", ok: "Microphone working", skipped: "Skipped", no: "Needs attention" },
+      screen: { label: "Screen Sharing", ok: "Entire screen shared", no: "Needs attention" },
+    },
+    speed: { down: "48 Mbps", up: "22 Mbps", slowDown: "3 Mbps", slowUp: "1 Mbps" },
     continue: "Continue",
   },
 
-  // ---------------- START ----------------
-  start: {
-    title: "Ready to start?",
-    subtitle: "Take a breath. You've done everything needed.",
-    allPassed: "All checks passed",
-    oneThing: "One thing needs attention",
-    fixIt: "Fix it",
-    rechecked: "Rechecked just now",
-    chips: {
-      camera: "Camera",
-      mic: "Microphone",
-      face: "Face",
-      screen: "Entire screen",
-      fullscreen: "Fullscreen",
-      internet: "Internet",
+  // ---------------- 14-15 CODE OF CONDUCT ----------------
+  conduct: {
+    title: "Code of Conduct",
+    follow: "Please follow these",
+    rows: {
+      help: { label: "No Help", body: "From anyone, in the room or online." },
+      devices: { label: "No Devices", body: "Phones, smartwatches, earphones or notes." },
+      stay: { label: "Stay in the Assessment", body: "Do not switch tabs or leave the window." },
+      malpractice: { label: "Malpractice", body: "Ends your assessment and can bar you from future ones." },
     },
-    beforeTitle: "Before you start",
-    beforeItems: [
-      "Charger plugged in",
-      "Notifications and chat apps closed or silenced",
-      "In a quiet place where you won't be interrupted",
-      "Water and anything you need nearby",
-    ],
-    realTitle: "This is the real test.",
-    realBody: "When you press Start, your [Duration] timer begins right away.",
-    cta: "Start test",
-    starting: "Starting...",
+    note: "Camera, screen and audio stay monitored during the assessment.",
+    agree: "I agree to follow the code of conduct.",
+    continue: "Continue",
+    startHint: "Your [Duration] timer starts when you press Continue.",
+    tickHint: "Tick the box to continue.",
     opensAt: "Opens at [Time]",
     opensIn: "Opens in",
-    opened: "The test is open. Press Start when you're ready.",
+    starting: "Starting...",
+    opened: "The test is open. Press Continue when you're ready.",
     failed: "We couldn't start your session. Your timer has not started.",
-    idleRecheck: "It's been a while. We rechecked your setup.",
-    notReady: "Fix the item that needs attention to start.",
+    fullText: "Read the full Code of Conduct",
+    fullTitle: "Code of Conduct",
+    fullBody: "[Full Code of Conduct text]",
+    fixBlocked: "Fix the item that needs attention to continue.",
   },
 
   started: {
@@ -470,28 +366,28 @@ export const S = {
     sendFailed: "We couldn't send that. Try again or use the contact details above.",
     diagnostics: "Diagnostics attached",
     fixes: {
-      rules: [
-        { title: "I can't open the Code of Conduct", steps: ["Press Read the full Code of Conduct.", "If it stays blank, reload this page.", "Reopen the link from your invitation email."] },
-        { title: "I don't know when the test starts", steps: ["Your timer starts only when you press Start on the last step.", "Setup before that is not timed."] },
+      details: [
+        { title: "This isn't my name", steps: ["Press Not you? Log out.", "Open the link from your own invitation email."] },
+      ],
+      before: [
+        { title: "Slow or no internet", steps: ["Move closer to your router.", "Switch to a stronger network or hotspot.", "Press Check again."] },
+        { title: "Blocked extensions found", steps: ["Open your browser's extensions page.", "Turn off ad blockers and similar tools.", "Press Check again."] },
       ],
       consent: [
-        { title: "I have a question about recording", steps: ["Use the contact details below.", "Contact support before the test closes."] },
-        { title: "I can't tick the box", steps: ["Press the box or its text.", "On a keyboard, press Space."] },
+        { title: "I have a question about monitoring", steps: ["Use the contact details below.", "Contact support before the test closes."] },
       ],
-      getReady: [
+      setup: [
         { title: "Camera not working", steps: ["Close apps like Zoom, Teams or Meet.", "Click the camera icon in the address bar and choose Allow.", "Press Try again."] },
-        { title: "Microphone not working", steps: ["Check your microphone isn't muted.", "Choose Allow when your browser asks.", "Press Test microphone and speak."] },
         { title: "Face not recognised", steps: ["Face a window or turn on a light.", "Remove cap, mask or sunglasses.", "Sit about an arm's length from the screen."] },
-        { title: "Screen sharing issues", steps: ["Press Share entire screen.", "Pick the Entire Screen tab, not a tab or window.", "Disconnect extra monitors."] },
-        { title: "Fullscreen issues", steps: ["Press Enter fullscreen again.", "Or press F11 on Windows, Control and Command and F on Mac."] },
-        { title: "Slow or no internet", steps: ["Move closer to your router.", "Switch to a stronger network or hotspot.", "Press Check again."] },
+        { title: "Microphone not working", steps: ["Check your microphone isn't muted.", "Choose Allow when your browser asks.", "Press Record and say the sentence."] },
+        { title: "Screen sharing issues", steps: ["Press Share Screen.", "Pick the Entire Screen tab, not a tab or window.", "Disconnect extra monitors."] },
       ],
-      practice: [
-        { title: "Answer isn't selecting", steps: ["Click the option or press Space on it.", "Practice answers are never saved."] },
+      summary: [
+        { title: "A check needs attention", steps: ["Press Fix it.", "Complete the step, then come back."] },
       ],
-      start: [
-        { title: "Start test is disabled", steps: ["If it says Opens at, wait for the time shown.", "If a check needs attention, press Fix it."] },
-        { title: "Start didn't work", steps: ["Your timer has not started.", "Press Try again.", "If it keeps failing, contact us below."] },
+      conduct: [
+        { title: "Continue is disabled", steps: ["Tick I agree to follow the code of conduct.", "If it says Opens at, wait for the time shown."] },
+        { title: "Starting didn't work", steps: ["Your timer has not started.", "Press Try again.", "If it keeps failing, contact us below."] },
       ],
       gate: [
         { title: "My link isn't working", steps: ["Open the link from your latest invitation email.", "Ask for a new link if it has expired."] },
@@ -503,11 +399,12 @@ export const S = {
     } as Record<string, Array<{ title: string; steps: string[] }>>,
     contextLabel: {
       gate: "this link",
-      rules: "Rules",
+      details: "Details",
+      before: "Before you begin",
       consent: "Consent",
-      getReady: "Get ready",
-      practice: "Practice",
-      start: "Start",
+      setup: "Device setup",
+      summary: "Everything is set",
+      conduct: "Code of Conduct",
       started: "your test",
     } as Record<string, string>,
   },

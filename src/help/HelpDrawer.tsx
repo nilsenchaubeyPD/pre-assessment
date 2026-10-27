@@ -90,7 +90,7 @@ export function HelpDrawer() {
                 type="checkbox"
                 checked={include}
                 onChange={(e) => setInclude(e.target.checked)}
-                className="mt-0.5 h-5 w-5 shrink-0 accent-[#1D5FD8]"
+                className="mt-0.5 h-5 w-5 shrink-0 accent-[#2563EB]"
               />
               <span className="text-sec text-ink">{S.help.include}</span>
             </label>
@@ -130,7 +130,7 @@ export function HelpDrawer() {
                       value={o}
                       checked={kind === o}
                       onChange={() => setKind(o)}
-                      className="h-5 w-5 accent-[#1D5FD8]"
+                      className="h-5 w-5 accent-[#2563EB]"
                     />
                     <span className="text-sec text-ink">{o}</span>
                   </label>

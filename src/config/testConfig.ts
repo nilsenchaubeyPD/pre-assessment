@@ -19,7 +19,7 @@ export interface TestConfig {
     internet: boolean;
   };
   /** Checks required inside Safe Exam Browser. [confirm with tech] */
-  sebChecks: Array<"internet" | "camera" | "mic" | "face" | "screen" | "fullscreen">;
+  sebChecks: Array<"internet" | "extensions" | "camera" | "mic" | "screen">;
   practiceEnabled: boolean;
   practiceHasCoding: boolean;
   rules: Array<{ title: string; why: string }>;
@@ -53,7 +53,7 @@ export const testConfig: TestConfig = {
     seb: false,
     internet: true,
   },
-  sebChecks: ["internet", "camera", "face"],
+  sebChecks: ["internet", "camera"],
   practiceEnabled: true,
   practiceHasCoding: false,
   rules: [
